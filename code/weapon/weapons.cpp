@@ -685,7 +685,9 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 			weaponp->wi_flags3 |= WIF3_FIGHTER_INTERCEPTABLE;
 		else if (!stricmp(NOX("apply recoil"), weapon_strings[i]))
 			weaponp->wi_flags3 |= WIF3_APPLY_RECOIL;
-		else
+		else if (!stricmp(NOX("don't spawn if shot"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_DONT_SPAWN_IF_SHOT;
+		else 
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
 
@@ -6359,8 +6361,10 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 	// spawn weapons - note the change from FS 1 multiplayer.
 	if (wip->wi_flags & WIF_SPAWN){
-		spawn_child_weapons(weapon_obj);
-	}	
+		if (!((wip->wi_flags3 & WIF3_DONT_SPAWN_IF_SHOT) && (sw_flag == SW_WEAPON_KILL))){			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
+			spawn_child_weapons(weapon_obj);
+		}
+	}
 }
 
 void weapon_detonate(object *objp)
