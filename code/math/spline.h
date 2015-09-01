@@ -63,13 +63,36 @@ public :
 	// set the points
 	void herm_set_points(int _num_pts, vec3d *_pts[MAX_HERM_PTS], vec3d *_d_pts[MAX_HERM_PTS]);	
 	
-	// get a point on the hermite curve.
+	/**
+	 * @brief Get a point on the hermite curve
+	 *
+	 * @param[out] out The point on the curve we're getting
+	 * @param[in]  u   The unit interval time (0 <= u <= 1)
+	 * @param[in]  k   Index of the starting control point
+	 *
+	 * @details Gets a vec3d point on the hermite curve between the interval of k and (k + 1).
+	 */
 	void herm_get_point(vec3d *out, float u, int k);
 
-	// the derivative of a point on the hermite curve
+	/**
+	 * @brief Get a derivative (slope at point) on the hermite curve
+	 *
+	 * @param[out] deriv  The derivative/slope of a point on the curve at u
+	 * @param[in]  u      The unit inteveral time (0 <= u <= 1)
+	 * @param[in]  k      Index of the starting control point
+	 *
+	 * @details Gets the derivative/slope/rate of change of a point on the hermite curve
+	 */
 	void herm_get_deriv(vec3d *deriv, float u, int k);
 
-	// render a bezier
+	/**
+	 * @breif Does a simple line render of a hermite curve
+	 *
+	 * @param[in] divs  The number of divisions, or segements, the rendered line will have (more segments = smoother)
+	 * @param[in] color The color of the rendered line
+	 *
+	 * @details Be sure to set the control points accordingly before rendering
+	 */
 	void herm_render(int divs, color *c);
 };
 

@@ -207,10 +207,10 @@ void herm_spline::herm_set_points(int _num_pts, vec3d *_pts[MAX_HERM_PTS], vec3d
 // get a point on the hermite curve.
 void herm_spline::herm_get_point(vec3d *out, float u, int k)
 {
-	float a = ( (2.0f * u * u * u) - (3.0f * u * u) + 1 );
-	float b = ( (-2.0f * u * u * u) + (3.0f * u * u) );
-	float c = ( (u * u * u) - (2.0f * u * u) + u );
-	float d = ( (u * u * u) - (u * u) );
+	float a = ( (2.0f * u * u * u) - (3.0f * u * u) + 1 );  // h00
+	float b = ( (-2.0f * u * u * u) + (3.0f * u * u) );     // h01
+	float c = ( (u * u * u) - (2.0f * u * u) + u );         // h10
+	float d = ( (u * u * u) - (u * u) );                    // h11
 
 	vec3d va;
 	vm_vec_copy_scale(&va, &pts[k], a);
