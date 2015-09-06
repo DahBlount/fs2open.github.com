@@ -86,7 +86,7 @@ public :
 	void herm_get_deriv(vec3d *deriv, float u, int k);
 
 	/**
-	 * @breif Does a simple line render of a hermite curve
+	 * @brief Does a simple line render of a hermite curve
 	 *
 	 * @param[in] divs  The number of divisions, or segements, the rendered line will have (more segments = smoother)
 	 * @param[in] color The color of the rendered line
