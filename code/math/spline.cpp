@@ -180,13 +180,13 @@ herm_spline::herm_spline()
 }
 
 // constructor
-herm_spline::herm_spline(int _num_pts, vec3d *_pts[MAX_HERM_PTS], vec3d *_d_pts[MAX_HERM_PTS])
+herm_spline::herm_spline(int _num_pts, SCP_vector<vec3d*> _pts, SCP_vector<vec3d*> _d_pts)
 {	
 	herm_set_points(_num_pts, _pts, _d_pts);
 }
 
 // set the points
-void herm_spline::herm_set_points(int _num_pts, vec3d *_pts[MAX_HERM_PTS], vec3d *_d_pts[MAX_HERM_PTS])
+void herm_spline::herm_set_points(int _num_pts, SCP_vector<vec3d*> _pts, SCP_vector<vec3d*> _d_pts)
 {
 	int idx;
 

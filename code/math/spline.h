@@ -52,16 +52,16 @@ public :
 #define MAX_HERM_PTS			3
 class herm_spline {
 public :
-	vec3d	pts[MAX_HERM_PTS];			// control points
-	vec3d	d_pts[MAX_HERM_PTS];			// derivative of control points (think of as velocity)
+	SCP_vector<vec3d>	pts;			// control points
+	SCP_vector<vec3d>	d_pts;			// derivative of control points (think of as velocity)
 	int		num_pts;
 public :
 	// constructor
 	herm_spline();
-	herm_spline(int _num_pts, vec3d *_pts[MAX_HERM_PTS], vec3d *_d_pts[MAX_HERM_PTS]);
+	herm_spline(int _num_pts, SCP_vector<vec3d*> _pts, SCP_vector<vec3d*> _d_pts);
 
 	// set the points
-	void herm_set_points(int _num_pts, vec3d *_pts[MAX_HERM_PTS], vec3d *_d_pts[MAX_HERM_PTS]);	
+	void herm_set_points(int _num_pts, SCP_vector<vec3d*> _pts, SCP_vector<vec3d*> _d_pts);
 	
 	/**
 	 * @brief Get a point on the hermite curve
