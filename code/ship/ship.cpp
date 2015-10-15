@@ -18710,8 +18710,7 @@ void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *
 
 	mst->draw_distortion = sip->draw_distortion;
 
-	if (sip->flags2 & SIF2_USE_THRUSTER_MATERIALS)
-	{
+	if (sip->flags2 & SIF2_USE_THRUSTER_MATERIALS) {
 		mst->use_model_mat = true;
 	}
 }
