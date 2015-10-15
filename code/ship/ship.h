@@ -935,6 +935,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_DRAW_WEAPON_MODELS				(1 << 17)	// the ship draws weapon models of any sort (used to be a boolean)
 #define SIF2_MODEL_POINT_SHIELDS			(1 << 18)	// zookeeper - uses model-defined shield points instead of quadrants
 #define SIF2_SUBSYS_REPAIR_WHEN_DISABLED	(1 << 19)	// MageKing17 - Subsystems auto-repair themselves even when disabled.
+#define SIF2_USE_THRUSTER_MATERIALS	(1 << 20)	// DahBlount - Makes model_render_buffer use the materials associated with the geometry instead of the species defined thruster anim
 
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0

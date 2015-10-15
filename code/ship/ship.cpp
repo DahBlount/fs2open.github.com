@@ -314,6 +314,7 @@ flag_def_list Ship_flags[] = {
 	{ "auto spread shields",		SIF2_AUTO_SPREAD_SHIELDS,	1 },
 	{ "model point shields",		SIF2_MODEL_POINT_SHIELDS,	1 },
 	{ "repair disabled subsystems", SIF2_SUBSYS_REPAIR_WHEN_DISABLED, 1},
+	{ "use thruster materials",		SIF2_USE_THRUSTER_MATERIALS,	1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -18708,6 +18709,11 @@ void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *
 	mst->distortion_rad_factor = sip->thruster_dist_rad_factor;
 
 	mst->draw_distortion = sip->draw_distortion;
+
+	if (sip->flags2 & SIF2_USE_THRUSTER_MATERIALS)
+	{
+		mst->use_model_mat = true;
+	}
 }
 
 void ship_render_batch_thrusters(object *obj)

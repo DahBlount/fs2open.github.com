@@ -705,6 +705,10 @@ void labviewer_add_model_thrusters(model_render_params *render_info, ship_info *
 		mst.glow_rad_factor = wip->thruster_glow_factor;
 	}
 
+	if (sip->flags2 & SIF2_USE_THRUSTER_MATERIALS) {
+		mst.use_model_mat = true;
+	}
+
 	// set, and go...
 	render_info->set_thruster_info(mst);
 }
