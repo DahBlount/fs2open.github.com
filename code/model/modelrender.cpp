@@ -1263,7 +1263,13 @@ void model_render_buffers(draw_list* scene, model_render_params* interp, vertex_
 
 		if (forced_texture != -2) {
 			if (render_as_thruster && interp->get_thruster_info().use_model_mat) {
-				texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], base_frametime);	// Same as below, but if render_as_thruster is set to true and the ship is supposed to use the materials assigned to the thruster geometry, this must be set instead of forced texture.
+				if ((interp->get_thruster_info().use_ab) && (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0)) {
+					// an underlying texture is replaced with a real new texture
+					tex_replace[TM_BASE_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_BASE_TYPE]);
+					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], base_frametime);
+				} else {
+					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], base_frametime);	// Same as below, but if render_as_thruster is set to true and the ship is supposed to use the materials assigned to the thruster geometry, this must be set instead of forced texture.
+				}
 			} else {
 				texture_maps[TM_BASE_TYPE] = forced_texture;
 			}
