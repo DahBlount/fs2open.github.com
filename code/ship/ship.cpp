@@ -4071,6 +4071,9 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 					sp->secondary_bank_capacity[i] = 0;
 				}
 
+				sp->render_bank = -1;
+				sp->render_weapon = -1;
+
 				sp->engine_wash_pointer = NULL;
 				
 				sp->alive_snd = -1;
@@ -4155,6 +4158,12 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 
 			//	Get secondary bank weapons
 			parse_weapon_bank(sip, false, NULL, sp->secondary_banks, sp->secondary_bank_capacity);
+
+			if (optional_string("$Render Weapon:")) {
+				stuff_int(&sp->render_bank);
+				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+				sp->render_weapon = weapon_info_lookup(buf);
+			}
 
 			// Get optional engine wake info
 			if (optional_string("$Engine Wash:")) {

@@ -217,6 +217,9 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
 
+	int render_bank;					// (DahBlount) the bank the weapon must be in
+	int render_weapon;					// (DahBlount) the Weapon_Info[] index of the weapon that should be in a bank to be rendered
+
 	int n_triggers;
 	queued_animation *triggers;		//all the triggered animations associated with this object
 
