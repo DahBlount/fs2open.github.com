@@ -181,3 +181,12 @@ bool model_anim_push_and_start_type(int stack_unique_id, ship *shipp, int animat
 bool model_anim_pop_and_start_type(int stack_unique_id);
 
 #endif // _MODELANIM_H
+
+/* Here will be new docs for the updated animation API - DahBlount
+** Objectives:
+** Implement skeletons, baked animations, and make the animation code sane.
+** To that end, comments while be made on each function explaining its purpose and the proceedings within.
+** 
+** 
+** 
+**/
