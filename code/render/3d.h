@@ -261,6 +261,17 @@ int g3_draw_line(vertex *p0, vertex *p1);
 int g3_draw_rod(const vec3d *p0, float width1, const vec3d *p1, float width2, vertex *verts, uint tmap_flags);
 
 /**
+* Draws a cylinder
+*
+* @param nv Number of vertices, related to the detail of the cylinder, 8 would yield an octagonal cylinder
+* @param fvec The forward vector to render along, used to determine how the vertices should be placed and projected
+* @param start The starting position
+* @param stop The end position
+* @param radius The radius to render
+*/
+int g3_draw_cylinder(int nv, vec3d *fvec, vec3d *start, vec3d *stop, float radius, uint tmap_flags);
+
+/**
  * Draws a bitmap with the specified 3d width & height
  *
  * Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
