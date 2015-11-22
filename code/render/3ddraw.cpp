@@ -517,6 +517,45 @@ int g3_draw_sphere_ez(const vec3d *pnt, float rad)
 	return 0;
 }
 
+// Draw a cylinder
+void g3_fill_cylinder(vertex **pointlist, const matrix *orient, const vec3d *start, const vec3d *stop, float radius, float offset, float h_translation, float v_translation, float scale)
+{
+	int i;
+	float dist, radians;
+	vec3d *temp;
+	vertex h[NUM_CYL_VERTS];
+	vertex *verts[NUM_CYL_VERTS];
+	for (i = 0; i < NUM_CYL_VERTS; i++) {
+		verts[i] = &h[i];
+	}
+
+	for (i = 0; i < (NUM_CYL_VERTS / 2); i++) {
+		temp = &vmd_zero_vector;
+		radians = CYL_ANGLE * i;
+		temp->xyz.x = (radius * cosf(radians));			// Form a circle 
+		temp->xyz.y = (radius * sinf(radians));
+		vm_vec_unrotate(&verts[2 * i]->world, temp, orient);
+		vm_vec_unrotate(&verts[(2 * i) + 1]->world, temp, orient);
+
+		if ((i == 0) || (i % 2 == 0)) {
+			vm_vec_add2(&verts[2 * i]->world, start);					// Complex stuff to properly position vertices
+			vm_vec_add2(&verts[(2 * i) + 1]->world, stop);
+			verts[2 * i]->texture_position.u = (0 + (offset * h_translation));
+			verts[(2 * i) + 1]->texture_position.u = (scale + (offset * h_translation));
+		} else if (i % 2 == 1) {
+			vm_vec_add2(&verts[2 * i]->world, stop);
+			vm_vec_add2(&verts[(2 * i) + 1]->world, start);
+			verts[2 * i]->texture_position.u = (scale + (offset * h_translation));
+			verts[(2 * i) + 1]->texture_position.u = (0 + (offset * h_translation));
+		}
+		verts[2 * i]->texture_position.v = ((1 - (i / 32)) + (offset * v_translation));
+		verts[(2 * i) + 1]->texture_position.v = ((1 - (i / 32)) + (offset * v_translation));
+	}
+	for (i = 0; i < NUM_CYL_VERTS; i++) {
+		pointlist[i] = verts[i];
+	}
+}
+
 //alternate method
 int g3_draw_bitmap_3d(vertex *pnt, int orient, float rad, uint tmap_flags, float depth)
 {
