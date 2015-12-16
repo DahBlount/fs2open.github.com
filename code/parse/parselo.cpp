@@ -14,17 +14,16 @@
 #include <stdarg.h>
 #include <setjmp.h>
 
+#include "ctype.h"
+#include "globalincs/version.h"
+#include "localization/fhash.h"
+#include "localization/localize.h"
+#include "mission/missionparse.h"
+#include "parse/encrypt.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
-#include "mission/missionparse.h"
-#include "ctype.h"
-#include "parse/encrypt.h"
-#include "localization/localize.h"
-#include "localization/fhash.h"
-#include "cfile/cfile.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
-#include "globalincs/version.h"
 
 
 
@@ -661,16 +660,21 @@ int optional_string_fred(char *pstr, char *end, char *end2)
 	return 1;
 }
 
-//	Return 0 or 1 for str1 match, str2 match.  Return -1 if neither matches.
-//	Does not update Mp if token found.  If not found, advances, trying to
-//	find the string.  Doesn't advance past the found string.
+/**
+ * @brief Checks for one of two required strings
+ *
+ * @retval 0 for str1 match
+ * @retval 1 for str2 match
+ * @throws parse::ParseException If neither strings were found
+ *
+ * @details Advances the Mp until a string is found or exceeds RS_MAX_TRIES. Once a string is found, Mp is located at
+ * the start of the found string.
+ */
 int required_string_either(char *str1, char *str2)
 {
-	int	count = 0;
-
 	ignore_white_space();
 
-	while (count < RS_MAX_TRIES) {
+	for (int count = 0; count < RS_MAX_TRIES; ++count) {
 		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
 			// Mp += strlen(str1);
 			diag_printf("Found required string [%s]\n", token_found = str1);
@@ -685,19 +689,22 @@ int required_string_either(char *str1, char *str2)
 
 		advance_to_eoln(NULL);
 		ignore_white_space();
-		count++;
 	}
 
-	if (count == RS_MAX_TRIES) {
-		nprintf(("Error", "Error: Unable to find either required token [%s] or [%s]\n", str1, str2));
-        Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
-        throw parse::ParseException("Required string not found");
-	}
-
-	return -1;
+	nprintf(("Error", "Error: Unable to find either required token [%s] or [%s]\n", str1, str2));
+	Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
+	throw parse::ParseException("Required string not found");
+	return -1;	// Dead code, but some compilers still complain about it
 }
 
-// Generic version of old required_string_3 and required_string_4; written by ngld, with some tweaks by MageKing17
+/**
+ * @brief Checks for one of any of the given required strings.
+ *
+ * @returns The index number of the found string, if it was found
+ * @returns -1 if a string was not found
+ *
+ * @details By ngld, with some tweaks by MageKing17. 
+ */
 int required_string_one_of(int arg_count, ...)
 {
 	Assertion(arg_count > 0, "required_string_one_of() called with arg_count of %d; get a coder!\n", arg_count);
@@ -930,7 +937,7 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 		outstr[foundstr - instr] = 0;
 
 	} else {
-		nprintf(("Error", "Error.  Too much text (%i chars, %i allowed) before %s\n",
+		nprintf(("Error", "Error.  Too much text (" SIZE_T_ARG " chars, %i allowed) before %s\n",
 			foundstr - instr - strlen(endstr), max_chars, endstr));
 
         throw parse::ParseException("Too much text found");
@@ -1783,31 +1790,30 @@ bool matches_version_specific_tag(const char *line_start, bool &compatible_versi
 {
 	// special version-specific comment
 	// formatted like e.g. ;;FSO 3.7.0;;
+	// Should now support anything from ;;FSO 3;; to ;;FSO 3.7.3.20151106;; -MageKing17
 	if (strnicmp(line_start, ";;FSO ", 6))
 		return false;
 
-	int major, minor, build, num_len;
-	const char *ch;
+	int major, minor, build, revis;
+	int s_num = scan_fso_version_string(line_start, &major, &minor, &build, &revis);
 
-	ch = line_start + 6;
-	if (!get_number_before_separator(major, num_len, ch, '.'))
+	if (s_num == 0)
 		return false;
 
-	ch += (num_len + 1);
-	if (!get_number_before_separator(minor, num_len, ch, '.'))
-		return false;
+	// hack for releases
+	if (s_num == 4 && FS_VERSION_REVIS < 1000) {
+		s_num = 3;
+	}
 
-	ch += (num_len + 1);
-	if (!get_number_before_separator(build, num_len, ch, ';'))
-		return false;
-
-	ch += (num_len + 1);
-	if (*ch != ';')
-		return false;
-
+	const char *ch = line_start + 6;
+	while ((*ch) != ';') {
+		Assertion((*ch) != '\0', "String that was already guaranteed to end with semicolons did not end with semicolons; it's possible we have fallen into an alternate universe. Failing string: [%s]\n", line_start);
+		ch++;
+	}
+	ch++;
+	Assertion((*ch) == ';', "String that was guaranteed to have double semicolons did not; it's possible we have fallen into an alternate universe. Failing string: [%s]\n", line_start);
 	ch++;
 
-	// tag is a match!
 	tag_len = ch - line_start;
 	compatible_version = true;
 
@@ -1816,17 +1822,24 @@ bool matches_version_specific_tag(const char *line_start, bool &compatible_versi
 	{
 		compatible_version = false;
 	}
-	else if (major == FS_VERSION_MAJOR)
+	else if (major == FS_VERSION_MAJOR && s_num > 1)
 	{
 		if (minor > FS_VERSION_MINOR)
 		{
 			compatible_version = false;
 		}
-		else if (minor == FS_VERSION_MINOR)
+		else if (minor == FS_VERSION_MINOR && s_num > 2)
 		{
 			if (build > FS_VERSION_BUILD)
 			{
 				compatible_version = false;
+			}
+			else if (build == FS_VERSION_BUILD && s_num > 3)
+			{
+				if (revis > FS_VERSION_REVIS)
+				{
+					compatible_version = false;
+				}
 			}
 		}
 	}
@@ -3770,101 +3783,26 @@ bool can_construe_as_integer(const char *text)
 // yoinked gratefully from dbugfile.cpp
 void vsprintf(SCP_string &dest, const char *format, va_list ap)
 {
-	const int MAX_BUF = 64;
-	const char *handled_types = "diouxXcfsn%";
+	va_list copy;
+	
+#if defined(_MSC_VER) && _MSC_VER < 1800
+	// Only Visual Studio >= 2013 supports va_copy
+	// This isn't portable but should work for Visual Studio
+	copy = ap;
+#else
+	va_copy(copy, ap);
+#endif
 
-	int buf_src_len;
-	char buf_src[MAX_BUF];
-	char buf_dest[MAX_BUF];
+	int needed_length = vsnprintf(nullptr, 0, format, copy);
+	va_end(copy);
 
-	const char *p;
-	int *pint;
-	long ival;
-	double dval;
-
-	// clear string
-	dest = "";
-
-	// Add each extra parameter to string
-	for (p = format; *p; ++p)
-	{
-		if (*p != '%')
-		{
-			dest += *p;
-			continue;
-		}
-
-		// find the specifier that comes next
-		buf_src[0] = '%';
-		buf_src_len = 1;
-		do {
-			++p;
-			if (!*p || (buf_src_len >= MAX_BUF-1))
-			{
-				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos %d!", MAX_BUF-1, format, (p - format));
-
-				// unsafe to continue handling this va_list
-				dest += buf_src;
-				return;
-			}
-
-			buf_src[buf_src_len] = *p;
-			buf_src_len++;
-		} while (strchr(handled_types, *p) == NULL);
-		buf_src[buf_src_len] = 0;
-
-		// handle it
-		switch (*p)
-		{
-			case 'd':
-			case 'i':
-			case 'o':
-			case 'u':
-			case 'x':
-			case 'X':
-			{
-				ival = va_arg(ap, int);
-				sprintf(buf_dest, buf_src, ival);
-				dest += buf_dest;
-				break;
-			}
-			case 'c':
-			{
-				dest += (char) va_arg(ap, int);
-				break;
-			}
-			case 'f':
-			{
-				dval = va_arg(ap, double);
-				sprintf(buf_dest, buf_src, dval);
-				dest += buf_dest;
-				break;
-			}
-			case 's':
-			{
-				dest += va_arg(ap, char *);
-				break;
-			}
-			case 'n':
-			{
-				pint = va_arg(ap, int *);
-				Assert(pint != NULL);
-				*pint = dest.length();
-				break;
-			}
-			case '%':
-			{
-				dest += '%';	// escaped %
-				break;
-			}
-			default:
-			{
-				sprintf(buf_dest, "N/A: %%%c", *p);
-				dest += buf_dest;
-				break;
-			}
-		}
+	if (needed_length < 0) {
+		// Error
+		return;
 	}
+
+	dest.resize(static_cast<size_t>(needed_length));
+	vsnprintf(&dest[0], dest.size() + 1, format, ap);
 }
 
 void sprintf(SCP_string &dest, const char *format, ...)

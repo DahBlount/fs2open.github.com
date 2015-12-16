@@ -10,16 +10,15 @@
 
 
 
-#include "hud/hudreticle.h"
-#include "hud/hud.h"
-#include "playerman/player.h"
-#include "ship/ship.h"
-#include "io/timer.h"
 #include "gamesnd/gamesnd.h"
+#include "hud/hudreticle.h"
 #include "hud/hudtargetbox.h"
-#include "weapon/emp.h"
+#include "io/timer.h"
 #include "localization/localize.h"
 #include "network/multi.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "weapon/emp.h"
 #include "weapon/weapon.h"
 
 #define NUM_RETICLE_ANIS			11		// keep up to date when modifying the number of reticle ani files
@@ -329,7 +328,7 @@ void HudGaugeReticle::getFirepointStatus() {
 
 						matrix eye_orient, player_transpose;
 
-						vm_copy_transpose_matrix(&player_transpose, &Objects[Player->objnum].orient);
+						vm_copy_transpose(&player_transpose, &Objects[Player->objnum].orient);
 						vm_matrix_x_matrix(&eye_orient, &player_transpose, &Eye_matrix);
 						vm_vec_rotate(&fpfromeye, &pm->gun_banks[i].pnt[j], &eye_orient);
 

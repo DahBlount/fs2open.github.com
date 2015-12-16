@@ -11,22 +11,22 @@
 
 #include <limits.h>
 
-#include "math/vecmat.h"
-#include "render/3d.h"
-#include "starfield/starfield.h"
-#include "freespace2/freespace.h"
-#include "io/timer.h"
-#include "starfield/nebula.h"
-#include "lighting/lighting.h"
-#include "mission/missionparse.h"
-#include "nebula/neb.h"
-#include "starfield/supernova.h"
 #include "cmdline/cmdline.h"
-#include "parse/parselo.h"
+#include "debugconsole/console.h"
+#include "freespace2/freespace.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
+#include "io/timer.h"
+#include "lighting/lighting.h"
+#include "math/vecmat.h"
+#include "mission/missionparse.h"
 #include "model/modelrender.h"
-#include "debugconsole/console.h"
+#include "nebula/neb.h"
+#include "parse/parselo.h"
+#include "render/3d.h"
+#include "starfield/nebula.h"
+#include "starfield/starfield.h"
+#include "starfield/supernova.h"
 
 #define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
@@ -296,10 +296,9 @@ static void starfield_create_bitmap_buffer(const int si_idx)
 	vm_angles_2_matrix(&m_bank, &bank_first);
 
 	// convert angles to matrix
-	float b_save = a->b;
-	a->b = 0.0f;
-	vm_angles_2_matrix(&m, a);
-	a->b = b_save;
+	angles a_temp = *a;
+	a_temp.b = 0.0f;
+	vm_angles_2_matrix(&m, &a_temp);
 
 	// generate the bitmap points
 	for(idx=0; idx<=div_x; idx++) {
@@ -430,8 +429,8 @@ void parse_startbl(const char *filename)
 							Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
 					}
 					else {
-						Warning(LOCATION, "Starfield bitmap '%s' already listed as a %sxparent bitmap!!  Only using the xparent version!",
-							(rc) ? "xparent" : "non-xparent", (rc) ? "xparent" : "non-xparent", sbm.filename);
+						Warning(LOCATION, "Starfield bitmap '%s' already listed as a %s bitmap!!  Only using the xparent version!",
+							sbm.filename, (rc) ? "xparent" : "non-xparent");
 					}
 				}
 				else {
@@ -1451,7 +1450,7 @@ void subspace_render()
 
 	vm_angles_2_matrix(&tmp,&angs);
 
-	render_info.set_outline_color(255, 255, 255);
+	render_info.set_color(255, 255, 255);
 	render_info.set_alpha(1.0f);
 	render_info.set_flags(render_flags);
 
@@ -2165,7 +2164,7 @@ void stars_draw_background()
 	render_info.set_alpha(1.0f);
 	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
 
-	model_render_immediate(&render_info, Nmodel_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL);
+	model_render_immediate(&render_info, Nmodel_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
 }
 
 // call this to set a specific model as the background model
@@ -2626,28 +2625,6 @@ void stars_delete_entry_FRED(int index, bool is_a_sun)
 void stars_load_first_valid_background()
 {
 	int background_idx = stars_get_first_valid_background();
-
-#ifndef NDEBUG
-	if (background_idx < 0 && !Fred_running)
-	{
-		int i;
-		bool at_least_one_bitmap = false;
-		for (i = 0; i < Num_backgrounds; i++)
-		{
-			if (Backgrounds[i].bitmaps.size() > 0)
-				at_least_one_bitmap = true;
-		}
-
-		if (at_least_one_bitmap)
-		{
-			if (Num_backgrounds == 1)
-				Warning(LOCATION, "Unable to find a sufficient number of bitmaps for this mission's background.  The background will not be displayed.");	
-			else if (Num_backgrounds > 1)
-				Warning(LOCATION, "Unable to find a sufficient number of bitmaps for any background listed in this mission.  No background will be displayed.");
-		}
-	}
-#endif
-
 	stars_load_background(background_idx);
 }
 
@@ -2659,32 +2636,43 @@ int stars_get_first_valid_background()
 	if (Num_backgrounds == 0)
 		return -1;
 
-	// get the first background with > 50% of its suns and > 50% of its bitmaps present
-	for (i = 0; i < (uint)Num_backgrounds; i++)
+	// scan every background except the last and return the first one that has all its suns and bitmaps present
+	for (i = 0; i < (uint)Num_backgrounds - 1; i++)
 	{
-		uint total_suns = 0;
-		uint total_bitmaps = 0;
+		bool valid = true;
 		background_t *background = &Backgrounds[i];
 
 		for (j = 0; j < background->suns.size(); j++)
 		{
-			if (stars_find_sun(background->suns[j].filename) >= 0)
-				total_suns++;
+			if (stars_find_sun(background->suns[j].filename) < 0)
+			{
+				mprintf(("Failed to load sun %s for background %d, falling back to background %d\n",
+					background->suns[j].filename, i + 1, i + 2));
+				valid = false;
+				break;
+			}
 		}
 
-		for (j = 0; j < background->bitmaps.size(); j++)
+		if (valid)
 		{
-			if (stars_find_bitmap(background->bitmaps[j].filename) >= 0)
-				total_bitmaps++;
+			for (j = 0; j < background->bitmaps.size(); j++)
+			{
+				if (stars_find_bitmap(background->bitmaps[j].filename) < 0)
+				{
+					mprintf(("Failed to load bitmap %s for background %d, falling back to background %d\n",
+						background->suns[j].filename, i + 1, i + 2));
+					valid = false;
+					break;
+				}
+			}
 		}
 
-		// add 1 so rounding will work properly
-		if ((total_suns >= (background->suns.size() + 1) / 2) && (total_bitmaps >= (background->bitmaps.size() + 1) / 2))
+		if (valid)
 			return i;
 	}
 
-	// didn't find a valid entry
-	return -1;
+	// didn't find a valid background yet, so return the last one
+	return Num_backgrounds - 1;
 }
 
 // Goober5000

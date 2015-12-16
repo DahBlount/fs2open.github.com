@@ -12,12 +12,12 @@
 
 #include "cfile/cfile.h"
 #include "controlconfig/controlsconfig.h"
-#include "io/key.h"
+#include "globalincs/def_files.h"
+#include "globalincs/systemvars.h"
 #include "io/joy.h"
+#include "io/key.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
-#include "globalincs/systemvars.h"
-#include "globalincs/def_files.h"
 
 // z64: These enumerations MUST equal to those in controlsconfig.cpp...
 // z64: Really need a better way than this.
@@ -610,6 +610,16 @@ void control_config_common_init()
 	}
 }
 
+/*
+ * @brief close any common control config stuff, called at game_shutdown()
+ */
+void control_config_common_close()
+{
+	// only need to worry control presets for now
+	for (auto ii = Control_config_presets.cbegin(); ii != Control_config_presets.cend(); ++ii) {
+		delete * ii;
+	}
+}
 
 
 #include <map>
@@ -888,6 +898,9 @@ void control_config_common_load_overrides()
 
 					if (optional_string("+Disable")) {
 						r_ccConfig.disabled = true;
+					}
+					if (optional_string("$Disable:")) {
+						stuff_boolean(&r_ccConfig.disabled);
 					}
 					
 					// Nerf the buffer now.

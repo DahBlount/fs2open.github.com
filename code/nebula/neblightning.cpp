@@ -10,18 +10,19 @@
 
 
 
-#include "parse/parselo.h"
-#include "globalincs/linklist.h"
-#include "io/timer.h"
 #include "debugconsole/console.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
-#include "render/3d.h"
+#include "globalincs/linklist.h"
+#include "io/timer.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
-#include "weapon/emp.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
+#include "parse/parselo.h"
+#include "render/3d.h"
+#include "weapon/emp.h"
+
 extern int Cmdline_nohtl;
 
 // ------------------------------------------------------------------------------------------------------
@@ -853,7 +854,7 @@ void nebl_calc_facing_pts_smart( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos
 	vm_vec_sub( &rvec, &Eye_position, &temp );
 	vm_vec_normalize( &rvec );	
 
-	vm_vec_crossprod(&uvec,fvec,&rvec);
+	vm_vec_cross(&uvec,fvec,&rvec);
 	vm_vec_normalize(&uvec);
 
 	vm_vec_scale_add( top, &temp, &uvec, w/2.0f );
