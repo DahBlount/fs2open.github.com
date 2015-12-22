@@ -389,6 +389,20 @@ void parse_everything_else(const char *filename)
 					temp_color.stripe.r = rgb[0] / 255.0f;
 					temp_color.stripe.g = rgb[1] / 255.0f;
 					temp_color.stripe.b = rgb[2] / 255.0f;
+
+					temp_color.stripe_g.r = rgb[0] / 255.0f;
+					temp_color.stripe_g.g = rgb[1] / 255.0f;
+					temp_color.stripe_g.b = rgb[2] / 255.0f;
+
+					if (optional_string("+Glow:")) {
+						stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+						for (i = 0; i < 3; i++) {
+							CLAMP(rgb[i], 0, 255);
+						}
+						temp_color.stripe_g.r = rgb[0] / 255.0f;
+						temp_color.stripe_g.g = rgb[1] / 255.0f;
+						temp_color.stripe_g.b = rgb[2] / 255.0f;
+					}
 				}
 
 				if (required_string("$Team Base Color:")) {
@@ -401,6 +415,20 @@ void parse_everything_else(const char *filename)
 					temp_color.base.r = rgb[0] / 255.0f;
 					temp_color.base.g = rgb[1] / 255.0f;
 					temp_color.base.b = rgb[2] / 255.0f;
+
+					temp_color.base_g.r = rgb[0] / 255.0f;
+					temp_color.base_g.g = rgb[1] / 255.0f;
+					temp_color.base_g.b = rgb[2] / 255.0f;
+
+					if (optional_string("+Glow:")) {
+						stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+						for (i = 0; i < 3; i++) {
+							CLAMP(rgb[i], 0, 255);
+						}
+						temp_color.base_g.r = rgb[0] / 255.0f;
+						temp_color.base_g.g = rgb[1] / 255.0f;
+						temp_color.base_g.b = rgb[2] / 255.0f;
+					}
 				}
 
 				if (Team_Colors.find(temp) == Team_Colors.end()) {	// Only push to the vector if the team isn't already defined.

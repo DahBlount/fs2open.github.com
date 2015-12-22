@@ -2186,6 +2186,8 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 	if ( shader_flags & SDR_FLAG_MODEL_TEAMCOLOR ) {
 		vec3d stripe_color;
 		vec3d base_color;
+		vec3d stripe_color_g;
+		vec3d base_color_g;
 
 		stripe_color.xyz.x = Current_team_color->stripe.r;
 		stripe_color.xyz.y = Current_team_color->stripe.g;
@@ -2195,8 +2197,18 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 		base_color.xyz.y = Current_team_color->base.g;
 		base_color.xyz.z = Current_team_color->base.b;
 
+		stripe_color_g.xyz.x = Current_team_color->stripe_g.r;
+		stripe_color_g.xyz.y = Current_team_color->stripe_g.g;
+		stripe_color_g.xyz.z = Current_team_color->stripe_g.b;
+
+		base_color_g.xyz.x = Current_team_color->base_g.r;
+		base_color_g.xyz.y = Current_team_color->base_g.g;
+		base_color_g.xyz.z = Current_team_color->base_g.b;
+
 		GL_state.Uniform.setUniform3f("stripe_color", stripe_color);
 		GL_state.Uniform.setUniform3f("base_color", base_color);
+		GL_state.Uniform.setUniform3f("stripe_color_g", stripe_color_g);
+		GL_state.Uniform.setUniform3f("base_color_g", base_color_g);
 	}
 
 	if ( shader_flags & SDR_FLAG_MODEL_THRUSTER ) {

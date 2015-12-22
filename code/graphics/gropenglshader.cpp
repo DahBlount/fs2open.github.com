@@ -125,7 +125,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		"Utility mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TEAMCOLOR, "FLAG_TEAMCOLOR", 
-		2, { "stripe_color", "base_color" }, 0, { NULL }, 
+		4, { "stripe_color", "base_color", "stripe_color_g", "base_color_g" }, 0, { NULL }, 
 		"Team Colors" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_DEFERRED, "FLAG_DEFERRED", 

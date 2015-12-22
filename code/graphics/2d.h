@@ -112,7 +112,13 @@ typedef struct team_color {
 	} base;
 	struct {
 		float r, g, b;
+	} base_g;
+	struct {
+		float r, g, b;
 	} stripe;
+	struct {
+		float r, g, b;
+	} stripe_g;
 } team_color;
 
 
