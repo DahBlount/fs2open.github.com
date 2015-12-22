@@ -517,7 +517,7 @@ int g3_draw_sphere_ez(const vec3d *pnt, float rad)
 	return 0;
 }
 
-// Draw a cylinder
+// Fill a cylinder with position and UV coordinates
 void g3_fill_cylinder(vertex **pointlist, const matrix *orient, const vec3d *start, const vec3d *stop, float radius, float offset, float h_translation, float v_translation, float scale)
 {
 	int i;
