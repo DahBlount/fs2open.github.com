@@ -923,11 +923,24 @@ void init_weapon_entry(int weap_info_index)
 	wip->turn_time = 1.0f;
 	wip->fov = 0;				//should be cos(pi), not pi
 	
+	wip->target_restrict = LR_CURRENT_TARGET;
+	wip->multi_lock = false;
+	wip->trigger_lock = false;
+	wip->launch_reset_locks = false;
+
+	wip->max_seeking = 1;
+	wip->max_seekers_per_target = 1;
+	wip->ship_type_restrict.clear();
+	wip->ship_type_restrict_temp.clear();
+
+	wip->acquire_method = WLOCK_PIXEL;
+
 	wip->min_lock_time = 0.0f;
 	wip->lock_pixels_per_sec = 50;
 	wip->catchup_pixels_per_sec = 50;
 	wip->catchup_pixel_penalty = 50;
 	wip->seeker_strength = 1.0f;
+	wip->lock_fov = 0.85f;
 
 	wip->swarm_count = -1;
 	// *Default is 150  -Et1
@@ -1702,6 +1715,44 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					wip->wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
 					wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
 				}
+			}
+
+			if ( optional_string("+Target Lock Restriction:") ) {
+				if ( optional_string("current target, any subsystem") ) {
+					wip->target_restrict = LR_CURRENT_TARGET_SUBSYS;
+				} else if ( optional_string("any target") ) {
+					wip->target_restrict = LR_ANY_TARGETS;
+				} else if ( optional_string("current target only") ) {
+					wip->target_restrict = LR_CURRENT_TARGET;
+				} else {
+					wip->target_restrict = LR_CURRENT_TARGET;
+				}
+			} else {
+				wip->target_restrict = LR_CURRENT_TARGET;
+			}
+
+			if ( optional_string("+Independent Seekers:") ) {
+				stuff_boolean(&wip->multi_lock);
+			}
+
+			if ( optional_string("+Trigger Hold:") ) {
+				stuff_boolean(&wip->trigger_lock);
+			}
+
+			if ( optional_string("+Reset On Launch:") ) {
+				stuff_boolean(&wip->launch_reset_locks);
+			}
+
+			if ( optional_string("+Max Seekers Per Target:") ) {
+				stuff_int(&wip->max_seekers_per_target);
+			}
+
+			if ( optional_string("+Max Active Seekers:") ) {
+				stuff_int(&wip->max_seeking);
+			}
+
+			if ( optional_string("+Ship Types:") ) {
+				stuff_string_list(wip->ship_type_restrict_temp);
 			}
 
 			if (wip->wi_flags & WIF_LOCKED_HOMING) {
@@ -3504,7 +3555,7 @@ void weapon_expl_info_init()
 
 void weapon_reset_info()
 {
-	memset( Weapon_info, 0, sizeof(weapon_info) * MAX_WEAPON_TYPES );
+	//memset( Weapon_info, 0, sizeof(weapon_info) * MAX_WEAPON_TYPES );
 
 	for (int i = 0; i < MAX_WEAPON_TYPES; i++)
 		init_weapon_entry(i);
@@ -3582,6 +3633,7 @@ void weapon_close()
 void weapon_level_init()
 {
 	int i;
+	extern int ships_inited;
 
 	// Reset everything between levels
 	Num_weapons = 0;
@@ -3593,6 +3645,19 @@ void weapon_level_init()
 	for (i=0; i<MAX_WEAPON_TYPES; i++)	{
 		Weapon_info[i].damage_type_idx = Weapon_info[i].damage_type_idx_sav;
 		Weapon_info[i].shockwave.damage_type_idx = Weapon_info[i].shockwave.damage_type_idx_sav;
+
+		if ( ships_inited ) {
+			// populate ship type lock restrictions
+			for ( int j = 0; j < (int)Weapon_info[i].ship_type_restrict_temp.size(); ++j ) {
+				int idx = ship_type_name_lookup((char*)Weapon_info[i].ship_type_restrict_temp[j].c_str());
+
+				if ( idx >= 0 ) {
+					Weapon_info[i].ship_type_restrict.push_back(idx);
+				}
+			}
+
+			Weapon_info[i].ship_type_restrict_temp.clear();
+		}
 	}
 
 	trail_level_init();		// reset all missile trails
@@ -7428,14 +7493,14 @@ void validate_SSM_entries()
 	SCP_vector<SCP_string>::const_iterator it;
 	weapon_info *wip;
 
-	for (it = Delayed_SSM_names.begin(); it != Delayed_SSM_names.end(); ++it) {
+	for ( it = Delayed_SSM_names.begin(); it != Delayed_SSM_names.end(); ++it ) {
 		delayed_ssm_data *dat = &Delayed_SSM_data[*it];
 		wi = weapon_info_lookup(it->c_str());
 		Assertion(wi >= 0, "Trying to validate non-existant weapon '%s'; get a coder!\n", it->c_str());
 		wip = &Weapon_info[wi];
 		nprintf(("parse", "Starting validation of '%s' [wip->name is '%s'], currently has an SSM_index of %d.\n", it->c_str(), wip->name, wip->SSM_index));
 		wip->SSM_index = ssm_info_lookup(dat->ssm_entry.c_str());
-		if (wip->SSM_index < 0) {
+		if ( wip->SSM_index < 0 ) {
 			Warning(LOCATION, "Unknown SSM entry '%s' in specification for %s (%s:line %d).\n", dat->ssm_entry.c_str(), it->c_str(), dat->filename.c_str(), dat->linenum);
 		}
 		nprintf(("parse", "Validation complete, SSM_index is %d.\n", wip->SSM_index));
@@ -7445,16 +7510,53 @@ void validate_SSM_entries()
 	Delayed_SSM_data.clear();
 	Delayed_SSM_names.clear();
 
-	for (it = Delayed_SSM_indices.begin(); it != Delayed_SSM_indices.end(); ++it) {
+	for ( it = Delayed_SSM_indices.begin(); it != Delayed_SSM_indices.end(); ++it ) {
 		delayed_ssm_index_data *dat = &Delayed_SSM_indices_data[*it];
 		wi = weapon_info_lookup(it->c_str());
 		Assertion(wi >= 0, "Trying to validate non-existant weapon '%s'; get a coder!\n", it->c_str());
 		wip = &Weapon_info[wi];
 		nprintf(("parse", "Starting validation of '%s' [wip->name is '%s'], currently has an SSM_index of %d.\n", it->c_str(), wip->name, wip->SSM_index));
-		if (wip->SSM_index < -1 || wip->SSM_index >= static_cast<int>(Ssm_info.size())) {
+		if ( wip->SSM_index < -1 || wip->SSM_index >= static_cast<int>(Ssm_info.size()) ) {
 			Warning(LOCATION, "Invalid SSM index '%d' (should be 0-" SIZE_T_ARG ") in specification for %s (%s:line %d).\n", wip->SSM_index, Ssm_info.size() - 1, it->c_str(), dat->filename.c_str(), dat->linenum);
 			wip->SSM_index = -1;
 		}
 		nprintf(("parse", "Validation complete, SSM-index is %d.\n", wip->SSM_index));
 	}
+}
+
+// Given a weapon, figure out how many independent locks we can have with it.
+int weapon_get_max_missile_seekers(weapon_info *wip)
+{
+	int max_target_locks;
+
+	if ( wip->multi_lock ) {
+		if ( wip->wi_flags & WIF_SWARM ) {
+			max_target_locks = wip->swarm_count;
+		} else if ( wip->wi_flags & WIF_CORKSCREW ) {
+			max_target_locks = wip->cs_num_fired;
+		} else {
+			max_target_locks = 1;
+		}
+	} else {
+		max_target_locks = 1;
+	}
+
+	return max_target_locks;
+}
+
+bool weapon_can_lock_on_ship_type(weapon_info *wip, int ship_type)
+{
+	if ( wip->ship_type_restrict.size() == 0 ) {
+		// no restrictions since this list wasn't even populated
+		return true;
+	}
+
+	for ( size_t i = 0; i < wip->ship_type_restrict.size(); ++i ) {
+		if ( wip->ship_type_restrict[i] == ship_type ) {
+			return true;
+		}
+	}
+
+	// can't lock this weapon on this ship type
+	return false;
 }

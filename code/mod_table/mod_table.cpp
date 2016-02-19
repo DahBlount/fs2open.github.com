@@ -216,18 +216,16 @@ void parse_mod_table(const char *filename)
 		}
 
 		
-			if (optional_string("$Generic Pain Flash Factor:")) {
+		if (optional_string("$Generic Pain Flash Factor:")) {
 			stuff_float(&Generic_pain_flash_factor);
 			if (Generic_pain_flash_factor != 1.0f)
 				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", Generic_pain_flash_factor));
-			
 		}
 		
-			if (optional_string("$Shield Pain Flash Factor:")) {
+		if (optional_string("$Shield Pain Flash Factor:")) {
 			stuff_float(&Shield_pain_flash_factor);
 			if (Shield_pain_flash_factor != 0.0f)
 				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
-			
 		}
 
 		optional_string("#NETWORK SETTINGS");

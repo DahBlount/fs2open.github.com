@@ -45,7 +45,7 @@
  *   If anything we could/should reduce MAX_BITMAPS in the future.  Where it's at now should accomidate even the
  *   largest mods.  --  Taylor
  */
-#define MAX_BITMAPS 4750
+#define MAX_BITMAPS 6000
 
 // Flag positions for bitmap.flags
 // ***** NOTE:  bitmap.flags is an 8-bit value, no more BMP_TEX_* flags can be added unless the type is changed!! ******
