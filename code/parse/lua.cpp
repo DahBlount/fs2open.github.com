@@ -3166,12 +3166,12 @@ ade_obj<object_h> l_Shields("shields", "Shields handle");
 
 ADE_FUNC(__len, l_Shields, NULL, "Number of shield segments", "number", "Number of shield segments or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 
 	if(!ade_get_args(L, "o", l_Shields.GetPtr(&objh)))
 		return ade_set_error(L, "i", -1);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "i", -1);
 
 	return ade_set_args(L, "i", objh->objp->n_quadrants);
@@ -3179,7 +3179,7 @@ ADE_FUNC(__len, l_Shields, NULL, "Number of shield segments", "number", "Number 
 
 ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment strength. Use \"SHIELD_*\" enumerations (for standard 4-quadrant shields) or index of a specific segment, or NONE for the entire shield", "number", "Segment/shield strength, or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float nval = -1.0f;
 
 	object *objp = NULL;
@@ -3191,7 +3191,7 @@ ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment streng
 		if(!ade_get_args(L, "os|f", l_Shields.GetPtr(&objh), &qd, &nval))
 			return ade_set_error(L, "f", 0.0f);
 
-		if(!objh->IsValid())
+		if(objh == nullptr || !objh->IsValid())
 			return ade_set_error(L, "f", 0.0f);
 
 		objp = objh->objp;
@@ -3257,12 +3257,12 @@ ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment streng
 //WMC - Ehh, screw it.
 ADE_VIRTVAR(CombinedLeft, l_Shields, "number", "Total shield hitpoints left (for all segments combined)", "number", "Combined shield strength, or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float nval = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Shields.GetPtr(&objh), &nval))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && nval >= 0.0f) {
@@ -3274,12 +3274,12 @@ ADE_VIRTVAR(CombinedLeft, l_Shields, "number", "Total shield hitpoints left (for
 
 ADE_VIRTVAR(CombinedMax, l_Shields, "number", "Maximum shield hitpoints (for all segments combined)", "number", "Combined maximum shield strength, or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float nval = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Shields.GetPtr(&objh), &nval))
 			return 0;
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && nval >= 0.0f) {
@@ -3291,7 +3291,7 @@ ADE_VIRTVAR(CombinedMax, l_Shields, "number", "Maximum shield hitpoints (for all
 
 ADE_FUNC(isValid, l_Shields, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	if(!ade_get_args(L, "o", l_Shields.GetPtr(&oh)))
 		return ADE_RETURN_NIL;
 
@@ -5055,11 +5055,11 @@ ade_obj<object_h> l_Object("object", "Object handle");
 
 ADE_FUNC(__eq, l_Object, "object, object", "Checks whether two object handles are for the same object", "boolean", "True if equal, false if not or a handle is invalid")
 {
-	object_h *o1, *o2;
+	object_h *o1 = nullptr, *o2 = nullptr;
 	if(!ade_get_args(L, "oo", l_Object.GetPtr(&o1), l_Object.GetPtr(&o2)))
 		return ADE_RETURN_FALSE;
 
-	if(!o1->IsValid() || !o2->IsValid())
+	if((o1 == nullptr || o2 == nullptr)|| (!o1->IsValid() || !o2->IsValid()))
 		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", o1->sig == o2->sig);
@@ -5067,11 +5067,11 @@ ADE_FUNC(__eq, l_Object, "object, object", "Checks whether two object handles ar
 
 ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string", "Object name, or empty string if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
 		return ade_set_error(L, "s", "");
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "s", "");
 
 	char buf[512];
@@ -5093,12 +5093,12 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 
 ADE_VIRTVAR(Parent, l_Object, "object", "Parent of the object. Value may also be a deriviative of the 'object' class, such as 'ship'.", "object", "Parent handle, or invalid handle if object is invalid")
 {
-	object_h *objh;
-	object_h *newparenth = NULL;
+	object_h *objh = nullptr;
+	object_h *newparenth = nullptr;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Object.GetPtr(&newparenth)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	if(ADE_SETTING_VAR)
@@ -5125,12 +5125,12 @@ ADE_VIRTVAR(Parent, l_Object, "object", "Parent of the object. Value may also be
 
 ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)", "vector", "World position, or null vector if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
@@ -5146,12 +5146,12 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 
 ADE_VIRTVAR(LastPosition, l_Object, "vector", "Object world position as of last frame (World vector)", "vector", "World position, or null vector if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
@@ -5163,15 +5163,15 @@ ADE_VIRTVAR(LastPosition, l_Object, "vector", "Object world position as of last 
 
 ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
 {
-	object_h *objh;
-	matrix_h *mh=NULL;
+	object_h *objh = nullptr;
+	matrix_h *mh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
 
-	if(ADE_SETTING_VAR && mh != NULL) {
+	if(ADE_SETTING_VAR && mh != nullptr) {
 		objh->objp->orient = *mh->GetMatrix();
 	}
 
@@ -5180,15 +5180,15 @@ ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (Wor
 
 ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation as of last frame (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
 {
-	object_h *objh;
-	matrix_h *mh=NULL;
+	object_h *objh = nullptr;
+	matrix_h *mh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
 
-	if(ADE_SETTING_VAR && mh != NULL) {
+	if(ADE_SETTING_VAR && mh != nullptr) {
 		objh->objp->last_orient = *mh->GetMatrix();
 	}
 
@@ -5197,15 +5197,15 @@ ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation 
 
 ADE_VIRTVAR(Physics, l_Object, "physics", "Physics data used to move ship between frames", "physics", "Physics data, or invalid physics handle if object handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	physics_info_h *pih = nullptr;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Physics.GetPtr(&pih)))
 		return ade_set_error(L, "o", l_Physics.Set(physics_info_h()));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_Physics.Set(physics_info_h()));
 
-	if(ADE_SETTING_VAR && pih && pih->IsValid()) {
+	if(ADE_SETTING_VAR && pih != nullptr && pih->IsValid()) {
 		objh->objp->phys_info = *pih->pi;
 	}
 
@@ -5214,12 +5214,12 @@ ADE_VIRTVAR(Physics, l_Object, "physics", "Physics data used to move ship betwee
 
 ADE_VIRTVAR(HitpointsLeft, l_Object, "number", "Hitpoints an object has left", "number", "Hitpoints left, or 0 if handle is invalid")
 {
-	object_h *objh = NULL;
+	object_h *objh = nullptr;
 	float f = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Object.GetPtr(&objh), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	//Set hull strength.
@@ -5232,16 +5232,16 @@ ADE_VIRTVAR(HitpointsLeft, l_Object, "number", "Hitpoints an object has left", "
 
 ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle, or invalid shields handle if object handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	object_h *sobjh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Shields.GetPtr(&sobjh)))
 		return ade_set_error(L, "o", l_Shields.Set(object_h()));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_Shields.Set(object_h()));
 
 	//WMC - copy shields
-	if(ADE_SETTING_VAR && sobjh && sobjh->IsValid())
+	if(ADE_SETTING_VAR && sobjh != nullptr && sobjh->IsValid())
 	{
 		for(int i = 0; i < objh->objp->n_quadrants; i++)
 			shield_set_quad(objh->objp, i, shield_get_quad(sobjh->objp, i));
@@ -5252,11 +5252,11 @@ ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle,
 
 ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "number", "Returns the object's unique numeric signature, or -1 if invalid.  Useful for creating a metadata system")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	if(!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
 		return ade_set_error(L, "i", -1);
 
-	if(!oh->IsValid())
+	if(oh == nullptr || !oh->IsValid())
 		return ade_set_error(L, "i", -1);
  
 	// this shouldn't be possible, added here to trap the offending object
@@ -5267,7 +5267,7 @@ ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "nu
 
 ADE_FUNC(isValid, l_Object, NULL, "Detects whether handle is valid", "boolean", "true if handle is valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	if(!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
 		return ADE_RETURN_FALSE;
 
@@ -5276,11 +5276,11 @@ ADE_FUNC(isValid, l_Object, NULL, "Detects whether handle is valid", "boolean", 
 
 ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object type name, or empty string if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
 		return ade_set_error(L, "s", "");
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Object_type_names[objh->objp->type]);
@@ -5288,12 +5288,12 @@ ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object typ
 
 ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current collision group signature. NOTE: This is a bitfield, NOT a normal number.")
 {
-	object_h *objh = NULL;
+	object_h *objh = nullptr;
 	int id = 0;
 	if(!ade_get_args(L, "o|i", l_Object.GetPtr(&objh), &id))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "i", 0);
 
 	//Set collision group data
@@ -5306,15 +5306,15 @@ ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number
 
 ADE_FUNC(getfvec, l_Object, "[boolean normalize]", "Returns the objects' current fvec.", "vector", "Objects' forward vector, or nil if invalid. If called with a true argument, vector will be normalized.")
 {
-	object_h *objh = NULL;
-	object *obj = NULL;
+	object_h *objh = nullptr;
+	object *obj = nullptr;
 	bool normalize = false;
 	
 	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &normalize)) {
 		return ADE_RETURN_NIL;
 	}
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ADE_RETURN_NIL;
 
 	obj = objh->objp;
@@ -5327,15 +5327,15 @@ ADE_FUNC(getfvec, l_Object, "[boolean normalize]", "Returns the objects' current
 
 ADE_FUNC(getuvec, l_Object, "[boolean normalize]", "Returns the objects' current uvec.", "vector", "Objects' up vector, or nil if invalid. If called with a true argument, vector will be normalized.")
 {
-	object_h *objh = NULL;
-	object *obj = NULL;
+	object_h *objh = nullptr;
+	object *obj = nullptr;
 	bool normalize = false;
 	
 	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &normalize)) {
 		return ADE_RETURN_NIL;
 	}
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ADE_RETURN_NIL;
 
 	obj = objh->objp;
@@ -5348,15 +5348,15 @@ ADE_FUNC(getuvec, l_Object, "[boolean normalize]", "Returns the objects' current
 
 ADE_FUNC(getrvec, l_Object, "[boolean normalize]", "Returns the objects' current rvec.", "vector", "Objects' rvec, or nil if invalid. If called with a true argument, vector will be normalized.")
 {
-	object_h *objh = NULL;
-	object *obj = NULL;
+	object_h *objh = nullptr;
+	object *obj = nullptr;
 	bool normalize = false;
 	
 	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &normalize)) {
 		return ADE_RETURN_NIL;
 	}
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ADE_RETURN_NIL;
 
 	obj = objh->objp;
@@ -5369,15 +5369,15 @@ ADE_FUNC(getrvec, l_Object, "[boolean normalize]", "Returns the objects' current
 
 ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [boolean Local]", "Checks the collisions between the polygons of the current object and a ray", "vector, collision info", "World collision point (local if boolean is set to true) and the specific collsision info, nil if no collisions")
 {
-	object_h *objh = NULL;
-	object *obj = NULL;
+	object_h *objh = nullptr;
+	object *obj = nullptr;
 	int model_num = -1, model_instance_num = -1, temp = 0;
 	vec3d *v3a, *v3b;
 	bool local = false;
 	if(!ade_get_args(L, "ooo|b", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b), &local))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ADE_RETURN_NIL;
 
 	obj = objh->objp;
@@ -5445,17 +5445,17 @@ ade_obj<object_h> l_Asteroid("asteroid", "Asteroid handle", &l_Object);
 
 ADE_VIRTVAR(Target, l_Asteroid, "object", "Asteroid target object; may be object derivative, such as ship.", "object", "Target object, or invalid handle if asteroid handle is invalid")
 {
-	object_h *oh = NULL;
-	object_h *th = NULL;
+	object_h *oh = nullptr;
+	object_h *th = nullptr;
 	if(!ade_get_args(L, "o|o", l_Asteroid.GetPtr(&oh), l_Object.GetPtr(&th)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!oh->IsValid())
+	if(oh == nullptr || !oh->IsValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	asteroid *asp = &Asteroids[oh->objp->instance];
 
-	if(ADE_SETTING_VAR && th != NULL) {
+	if(ADE_SETTING_VAR && th != nullptr) {
 		if(th->IsValid())
 			asp->target_objnum = OBJ_INDEX(th->objp);
 		else
@@ -5471,15 +5471,15 @@ ADE_VIRTVAR(Target, l_Asteroid, "object", "Asteroid target object; may be object
 
 ADE_FUNC(kill, l_Asteroid, "[ship killer=nil, wvector hitpos=nil]", "Kills the asteroid. Set \"killer\" to designate a specific ship as having been the killer, and \"hitpos\" to specify the world position of the hit location; if nil, the asteroid center is used.", "boolean", "True if successful, false or nil otherwise")
 {
-	object_h *victim,*killer=NULL;
-	vec3d *hitpos=NULL;
+	object_h *victim = nullptr,*killer = nullptr;
+	vec3d *hitpos = nullptr;
 	if(!ade_get_args(L, "o|oo", l_Asteroid.GetPtr(&victim), l_Ship.GetPtr(&killer), l_Vector.GetPtr(&hitpos)))
 		return ADE_RETURN_NIL;
 
-	if(!victim->IsValid())
+	if(victim == nullptr || !victim->IsValid())
 		return ADE_RETURN_NIL;
 
-	if(killer != NULL && !killer->IsValid())
+	if(killer != nullptr && !killer->IsValid())
 		return ADE_RETURN_NIL;
 
 	if (!hitpos)
@@ -6615,12 +6615,12 @@ ade_obj<object_h> l_Debris("debris", "Debris handle", &l_Object);
 
 ADE_VIRTVAR(IsHull, l_Debris, "boolean", "Whether or not debris is a piece of hull", "boolean", "Whether debris is a hull fragment, or false if handle is invalid")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	bool b=false;
 	if(!ade_get_args(L, "o|b", l_Debris.GetPtr(&oh), &b))
 		return ade_set_error(L, "b", false);
 
-	if(!oh->IsValid())
+	if(oh == nullptr || !oh->IsValid())
 		return ade_set_error(L, "b", false);
 
 	debris *db = &Debris[oh->objp->instance];
@@ -6635,12 +6635,12 @@ ADE_VIRTVAR(IsHull, l_Debris, "boolean", "Whether or not debris is a piece of hu
 
 ADE_VIRTVAR(OriginClass, l_Debris, "shipclass", "The shipclass of the ship this debris originates from", "shipclass", "The shipclass of the ship that created this debris")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	int shipIdx = -1;
 	if(!ade_get_args(L, "o|o", l_Debris.GetPtr(&oh), &shipIdx))
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
-	if(!oh->IsValid())
+	if(oh == nullptr || !oh->IsValid())
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
 	debris *db = &Debris[oh->objp->instance];
@@ -6655,11 +6655,11 @@ ADE_VIRTVAR(OriginClass, l_Debris, "shipclass", "The shipclass of the ship this 
 
 ADE_FUNC(getDebrisRadius, l_Debris, NULL, "The radius of this debris piece", "number", "The radius of this debris piece or -1 if invalid")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	if(!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
 		return ade_set_error(L, "f", -1.0f);
 
-	if(!oh->IsValid())
+	if(oh == nullptr || !oh->IsValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	debris *db = &Debris[oh->objp->instance];
@@ -6677,7 +6677,7 @@ ADE_FUNC(getDebrisRadius, l_Debris, NULL, "The radius of this debris piece", "nu
 
 ADE_FUNC(isValid, l_Debris, NULL, "Return if this debris handle is valid", "boolean", "true if valid false otherwise")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	if(!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
 		return ADE_RETURN_FALSE;
 
@@ -6820,13 +6820,13 @@ ADE_FUNC(__len, l_WaypointList_Waypoints, NULL, "Number of waypoints in the miss
 
 ADE_FUNC(getList, l_Waypoint, NULL, "Returns the waypoint list", "waypointlist", "waypointlist handle or invalid handle if waypoint was invalid")
 {
-	object_h *oh = NULL;
+	object_h *oh = nullptr;
 	waypointlist_h wpl;
 	waypoint_list *wp_list = NULL;
 	if(!ade_get_args(L, "o", l_Waypoint.GetPtr(&oh)))
 		return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
 
-	if(oh->IsValid() && oh->objp->type == OBJ_WAYPOINT) {
+	if(oh != nullptr && oh->IsValid() && oh->objp->type == OBJ_WAYPOINT) {
 		wp_list = find_waypoint_list_with_instance(oh->objp->instance);
 		if(wp_list != NULL)
 			wpl = waypointlist_h(wp_list);
@@ -7550,17 +7550,17 @@ ADE_VIRTVAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary w
 
 ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. If used to set a new target, AI targeting will be switched off.", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Object.GetPtr(&objh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!sso->IsValid())
+	if(sso == nullptr || !sso->IsValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	ship_subsys *ss = sso->ss;
 
-	if(ADE_SETTING_VAR && objh && objh->IsValid())
+	if(ADE_SETTING_VAR && objh != nullptr && objh->IsValid())
 	{
 		ss->turret_enemy_objnum = OBJ_INDEX(objh->objp);
 		ss->turret_enemy_sig = objh->sig;
@@ -7761,12 +7761,12 @@ ADE_FUNC(isTurret, l_Subsystem, NULL, "Determines if this subsystem is a turret"
 
 ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object is in the turrets FOV", "boolean", "true if in FOV, false if not, nil on error or if subsystem is not a turret ")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	object_h *newh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Object.GetPtr(&newh)))
 		return ADE_RETURN_NIL;
 
-	if (!sso->IsValid() || !newh || !newh->IsValid() || !(sso->ss->system_info->type == SUBSYSTEM_TURRET))
+	if (sso == nullptr || !sso->IsValid() || newh == nullptr || !newh->IsValid() || !(sso->ss->system_info->type == SUBSYSTEM_TURRET))
 		return ADE_RETURN_NIL;
 
 	vec3d	tpos,tvec;
@@ -7783,13 +7783,13 @@ ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object 
 bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f);
 ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]", "Fires weapon on turret", NULL, NULL)
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	int wnum = 1;
 	float flak_range = 100.0f;
 	if(!ade_get_args(L, "o|if", l_Subsystem.GetPtr(&sso), &wnum, &flak_range))
 		return ADE_RETURN_NIL;
 
-	if(!sso->IsValid())
+	if(sso == nullptr || !sso->IsValid())
 		return ADE_RETURN_NIL;
 
 	if (sso->ss->current_hits <= 0)
@@ -7813,7 +7813,7 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 
 ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates the turret to face Pos or resets the turret to its original state", "boolean", "true on success false otherwise")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	vec3d pos = vmd_zero_vector;
 	bool reset = false;
 	if (!ade_get_args(L, "oo|b", l_Subsystem.GetPtr(&sso), l_Vector.Get(&pos), &reset))
@@ -7843,11 +7843,11 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates
 
 ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vector", "vector", "Returns a normalized version of the forward vector or null vector on error")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!sso->IsValid())
+	if(sso == nullptr || !sso->IsValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 	
 	vec3d gvec;
@@ -7863,12 +7863,12 @@ ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vecto
 
 ADE_FUNC(getFOVs, l_Subsystem, NULL, "Returns current turrets FOVs", "number, number, number", "Standard FOV, maximum barrel elevation, turret base fov.")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	float fov, fov_e, fov_y;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
 
-	if(!sso->IsValid())
+	if(sso == nullptr || !sso->IsValid())
 		return ADE_RETURN_NIL;
 
 	model_subsystem *tp = sso->ss->system_info;
@@ -7882,11 +7882,11 @@ ADE_FUNC(getFOVs, l_Subsystem, NULL, "Returns current turrets FOVs", "number, nu
 
 ADE_FUNC(getNextFiringPosition, l_Subsystem, NULL, "Retrieves the next position and firing normal this turret will fire from. This function returns a world position", "vector, vector", "vector or null vector on error")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Vector.Set(vmd_zero_vector));
 	
-	if(!sso->IsValid())
+	if(sso == nullptr || !sso->IsValid())
 		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Vector.Set(vmd_zero_vector));
 
 	vec3d gpos, gvec;
@@ -7898,12 +7898,12 @@ ADE_FUNC(getNextFiringPosition, l_Subsystem, NULL, "Retrieves the next position 
 
 ADE_FUNC(getTurretMatrix, l_Subsystem, NULL, "Returns current subsystems turret matrix", "matrix", "Turret matrix.")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	matrix m;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
 	
-	if(!sso->IsValid())
+	if(sso == nullptr || !sso->IsValid())
 		return ADE_RETURN_NIL;
 
 	model_subsystem *tp = sso->ss->system_info;
@@ -7915,12 +7915,12 @@ ADE_FUNC(getTurretMatrix, l_Subsystem, NULL, "Returns current subsystems turret 
 
 ADE_FUNC(getParent, l_Subsystem, NULL, "The object parent of this subsystem, is of type ship", "object", "object handle or invalid handle on error")
 {
-	ship_subsys_h *sso = NULL;
-	object_h *objhp = NULL;
+	ship_subsys_h *sso = nullptr;
+	object_h *objhp = nullptr;
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Ship.GetPtr(&objhp)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!sso->IsValid())
+	if(sso == nullptr || !sso->IsValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	return ade_set_args(L, "o", l_Object.Set(object_h(sso->objp)));
@@ -7928,7 +7928,7 @@ ADE_FUNC(getParent, l_Subsystem, NULL, "The object parent of this subsystem, is 
 
 ADE_FUNC(isValid, l_Subsystem, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
 
@@ -7980,13 +7980,13 @@ ade_obj<order_h> l_Order("order", "order handle");
 
 ADE_VIRTVAR(Priority, l_Order, "number", "Priority of the given order", "number", "Order priority or 0 if invalid")
 {
-	order_h *ohp = NULL;
+	order_h *ohp = nullptr;
 	int priority = 1;
 
 	if(!ade_get_args(L, "o|i", l_Order.GetPtr(&ohp), &priority))
 		return ade_set_error(L, "i", 0);
 
-	if(!ohp->IsValid())
+	if(ohp == nullptr || !ohp->IsValid())
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR) {
@@ -7998,11 +7998,11 @@ ADE_VIRTVAR(Priority, l_Order, "number", "Priority of the given order", "number"
 
 ADE_FUNC(remove, l_Order, NULL, "Removes the given order from the ship's priority queue.", "boolean", "True if order was successfully removed, otherwise false or nil.")
 {
-	order_h *ohp = NULL;
+	order_h *ohp = nullptr;
 	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
 		return ADE_RETURN_NIL;
 
-	if(!ohp->IsValid())
+	if(ohp == nullptr || !ohp->IsValid())
 		return ADE_RETURN_FALSE;
 
 	ai_info *aip = &Ai_info[Ships[ohp->objh.objp->instance].ai_index];
@@ -8014,12 +8014,12 @@ ADE_FUNC(remove, l_Order, NULL, "Removes the given order from the ship's priorit
 
 ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "The type of the order as one of the ORDER_* enumerations.")
 {
-	order_h *ohp = NULL;
+	order_h *ohp = nullptr;
 	int eh_idx = -1;
 	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
-	if(!ohp->IsValid())
+	if(ohp == nullptr || !ohp->IsValid())
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
 	switch(ohp->aigp->ai_mode){
@@ -8096,15 +8096,15 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 
 ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a deriviative of the 'object' class, such as 'ship'.", "object", "Target object or invalid object handle if order handle is invalid or order requires no target.")
 {
-	order_h *ohp = NULL;
-	object_h *newh = NULL;
-	ai_info *aip = NULL;
-	waypoint_list *wpl = NULL;
+	order_h *ohp = nullptr;
+	object_h *newh = nullptr;
+	ai_info *aip = nullptr;
+	waypoint_list *wpl = nullptr;
 	int shipnum = -1, objnum = -1;
 	if(!ade_get_args(L, "o|o", l_Order.GetPtr(&ohp), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!ohp->IsValid())
+	if(ohp == nullptr || !ohp->IsValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	aip = &Ai_info[Ships[ohp->objh.objp->instance].ai_index];
@@ -8242,21 +8242,21 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 
 ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the order.", "subsystem", "Target subsystem, or invalid subsystem handle if order handle is invalid or order requires no subsystem target.")
 {
-	order_h *ohp = NULL;
-	ship_subsys_h *newh = NULL;
-	ai_info *aip = NULL;
-	object *objp = NULL;
+	order_h *ohp = nullptr;
+	ship_subsys_h *newh = nullptr;
+	ai_info *aip = nullptr;
+	object *objp = nullptr;
 	if(!ade_get_args(L, "o|o", l_Order.GetPtr(&ohp), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(!ohp->IsValid())
+	if(ohp == nullptr || !ohp->IsValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
 	aip = &Ai_info[Ships[ohp->objh.objp->instance].ai_index];
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->IsValid() && (ohp->aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
+		if(newh != nullptr && newh->IsValid() && (ohp->aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
 		{
 			objp = &Objects[newh->ss->parent_objnum];
 			if(!stricmp(Ships[objp->instance].ship_name, ohp->aigp->target_name)) {
@@ -8286,7 +8286,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 
 ADE_FUNC(isValid, l_Order, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
-	order_h *ohp = NULL;
+	order_h *ohp = nullptr;
 	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
 		return ADE_RETURN_NIL;
 
@@ -8298,11 +8298,11 @@ ade_obj<object_h> l_ShipOrders("shiporders", "Ship orders");
 
 ADE_FUNC(__len, l_ShipOrders, NULL, "Number of ship orders", "number", "Number of ship orders, or 0 if handle is invalid")
 {
-	object_h *objh = NULL;
+	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o", l_ShipOrders.GetPtr(&objh)))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid() || objh->objp->type != OBJ_SHIP || Ships[objh->objp->instance].ai_index < 0)
+	if(objh == nullptr || !objh->IsValid() || objh->objp->type != OBJ_SHIP || Ships[objh->objp->instance].ai_index < 0)
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", ai_goal_num(&Ai_info[Ships[objh->objp->instance].ai_index].goals[0]));
@@ -8310,7 +8310,7 @@ ADE_FUNC(__len, l_ShipOrders, NULL, "Number of ship orders", "number", "Number o
 
 ADE_INDEXER(l_ShipOrders, "number Index", "Array of ship orders", "order", "Order, or invalid order handle on failure")
 {
-	object_h *objh = NULL;
+	object_h *objh = nullptr;
 	int i;
 
 	if (!ade_get_args(L, "oi", l_ShipOrders.GetPtr(&objh), &i))
@@ -8318,7 +8318,7 @@ ADE_INDEXER(l_ShipOrders, "number Index", "Array of ship orders", "order", "Orde
 
 	i--; //Lua->FS2
 
-	if (!objh->IsValid() || i < 0 || i >= MAX_AI_GOALS)
+	if (objh == nullptr || !objh->IsValid() || i < 0 || i >= MAX_AI_GOALS)
 		return ade_set_error(L, "o", l_Order.Set(order_h()));
 
 	ai_info *aip = &Ai_info[Ships[objh->objp->instance].ai_index];
@@ -8331,7 +8331,7 @@ ADE_INDEXER(l_ShipOrders, "number Index", "Array of ship orders", "order", "Orde
 
 ADE_FUNC(isValid, l_ShipOrders, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	if(!ade_get_args(L, "o", l_ShipOrders.GetPtr(&oh)))
 		return ADE_RETURN_NIL;
 
@@ -8345,11 +8345,11 @@ ade_obj<object_h> l_ShipTextures("shiptextures", "Ship textures handle");
 
 ADE_FUNC(__len, l_ShipTextures, NULL, "Number of textures on ship", "number", "Number of textures on ship, or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o", l_ShipTextures.GetPtr(&objh)))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "i", 0);
 
 	polymodel *pm = model_get(Ship_info[Ships[objh->objp->instance].ship_info_index].model_num);
@@ -8362,13 +8362,13 @@ ADE_FUNC(__len, l_ShipTextures, NULL, "Number of textures on ship", "number", "N
 
 ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of ship textures", "texture", "Texture, or invalid texture handle on failure")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	char *s;
 	int tdx=-1;
 	if (!ade_get_args(L, "os|o", l_ShipTextures.GetPtr(&oh), &s, l_Texture.Get(&tdx)))
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
-	if (!oh->IsValid() || s==NULL)
+	if (oh == nullptr || !oh->IsValid() || s == nullptr)
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
 	ship *shipp = &Ships[oh->objp->instance];
@@ -8377,7 +8377,7 @@ ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of shi
 	int i;
 
 	char fname[MAX_FILENAME_LEN];
-	if (shipp->ship_replacement_textures != NULL)
+	if (shipp->ship_replacement_textures != nullptr)
 	{
 		for(i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
 		{
@@ -8433,7 +8433,7 @@ ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of shi
 
 ADE_FUNC(isValid, l_ShipTextures, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	if(!ade_get_args(L, "o", l_ShipTextures.GetPtr(&oh)))
 		return ADE_RETURN_NIL;
 
@@ -8479,11 +8479,11 @@ ade_obj<cockpit_displays_h> l_CockpitDisplays("displays", "Player cockpit displa
 
 ADE_FUNC(__len, l_CockpitDisplays, NULL, "Gets the number of cockpit displays for the player ship", "number", "number of displays or -1 on error")
 {
-	cockpit_displays_h *cdh = NULL;
+	cockpit_displays_h *cdh = nullptr;
 	if(!ade_get_args(L, "o", l_CockpitDisplays.GetPtr(&cdh)))
 		return ade_set_error(L, "i", -1);
 
-	if (!cdh->isValid())
+	if (cdh == nullptr || !cdh->isValid())
 		return ade_set_error(L, "i", -1);
 
 	return ade_set_args(L, "i", (int) Player_displays.size());
@@ -8493,7 +8493,7 @@ ADE_INDEXER(l_CockpitDisplays, "number/string", "Gets a cockpit display from the
 {
 	if (lua_isnumber(L, 2))
 	{
-		cockpit_displays_h *cdh = NULL;
+		cockpit_displays_h *cdh = nullptr;
 		int index = -1;
 
 		if (!ade_get_args(L, "oi", l_CockpitDisplays.GetPtr(&cdh), &index))
@@ -8512,20 +8512,20 @@ ADE_INDEXER(l_CockpitDisplays, "number/string", "Gets a cockpit display from the
 	}
 	else
 	{
-		cockpit_displays_h *cdh = NULL;
-		char *name = NULL;
+		cockpit_displays_h *cdh = nullptr;
+		char *name = nullptr;
 
 		if (!ade_get_args(L, "os", l_CockpitDisplays.GetPtr(&cdh), &name))
 		{
 			return ade_set_error(L, "o", l_CockpitDisplay.Set(cockpit_display_h()));
 		}
 
-		if (!cdh->isValid())
+		if (cdh == nullptr || !cdh->isValid())
 		{
 			return ade_set_error(L, "o", l_CockpitDisplay.Set(cockpit_display_h()));
 		}
 
-		if (name == NULL)
+		if (name == nullptr)
 		{
 			return ade_set_error(L, "o", l_CockpitDisplay.Set(cockpit_display_h()));
 		}
@@ -8556,7 +8556,7 @@ ADE_INDEXER(l_CockpitDisplays, "number/string", "Gets a cockpit display from the
 
 ADE_FUNC(isValid, l_CockpitDisplays, NULL, "Detects whether this handle is valid or not", "boolean", "true if valid, false otherwise")
 {
-	cockpit_displays_h *cdh = NULL;
+	cockpit_displays_h *cdh = nullptr;
 	if(!ade_get_args(L, "o", l_CockpitDisplays.GetPtr(&cdh)))
 		return ADE_RETURN_FALSE;
 
@@ -8614,13 +8614,13 @@ ade_obj<sound_entry_h> l_SoundEntry("soundentry", "sounds.tbl table entry handle
 
 ADE_VIRTVAR(DefaultVolume, l_SoundEntry, "number", "The default volume of this game sound", "number", "Volume in the range from 1 to 0 or -1 on error")
 {
-	sound_entry_h *seh = NULL;
+	sound_entry_h *seh = nullptr;
 	float newVal = -1.0f;
 
 	if (!ade_get_args(L, "o|f", l_SoundEntry.GetPtr(&seh), &newVal))
 		return ade_set_error(L, "f", -1.0f);
 
-	if (seh == NULL || !seh->IsValid())
+	if (seh == nullptr || !seh->IsValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	if (ADE_SETTING_VAR)
@@ -8638,12 +8638,12 @@ ADE_VIRTVAR(DefaultVolume, l_SoundEntry, "number", "The default volume of this g
 
 ADE_FUNC(getFilename, l_SoundEntry, NULL, "Returns the filename of this sound", "string", "filename or empty string on error")
 {
-	sound_entry_h *seh = NULL;
+	sound_entry_h *seh = nullptr;
 
 	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
 		return ade_set_error(L, "s", "");
 
-	if (seh == NULL || !seh->IsValid())
+	if (seh == nullptr || !seh->IsValid())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", seh->Get()->filename);
@@ -8651,12 +8651,12 @@ ADE_FUNC(getFilename, l_SoundEntry, NULL, "Returns the filename of this sound", 
 
 ADE_FUNC(getDuration, l_SoundEntry, NULL, "Gives the length of the sound in seconds.", "number", "the length, or -1 on error")
 {
-	sound_entry_h *seh = NULL;
+	sound_entry_h *seh = nullptr;
 
 	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
 		return ade_set_error(L, "f", -1.0f);
 
-	if (seh == NULL || !seh->IsValid())
+	if (seh == nullptr || !seh->IsValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	return ade_set_args(L, "f", (i2fl(snd_get_duration(seh->getId())) / 1000.0f));
@@ -8666,8 +8666,8 @@ ADE_FUNC(get3DValues, l_SoundEntry, "vector Postion[, number radius=0.0]", "Comp
 	"If range is given then the volume will diminish when the listener is withing that distance to the source.<br>"
 	"The position of the listener is always the the current viewing position.", "number, number", "The volume and the panning, in that sequence, or both -1 on error")
 {
-	sound_entry_h *seh = NULL;
-	vec3d *sourcePos = NULL;
+	sound_entry_h *seh = nullptr;
+	vec3d *sourcePos = nullptr;
 	float radius = 0.0f;
 
 	float vol = 0.0f;
@@ -8676,7 +8676,7 @@ ADE_FUNC(get3DValues, l_SoundEntry, "vector Postion[, number radius=0.0]", "Comp
 	if (!ade_get_args(L, "oo|f", l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&sourcePos), &radius))
 		return ade_set_error(L, "ff", -1.0f, -1.0f);
 
-	if (seh == NULL || !seh->IsValid())
+	if (seh == nullptr || !seh->IsValid())
 		return ade_set_error(L, "ff", -1.0f, -1.0f);
 
 	int result = snd_get_3d_vol_and_pan(seh->Get(), sourcePos, &vol, &pan, radius);
@@ -8693,7 +8693,7 @@ ADE_FUNC(get3DValues, l_SoundEntry, "vector Postion[, number radius=0.0]", "Comp
 
 ADE_FUNC(isValid, l_SoundEntry, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
-	sound_entry_h *seh;
+	sound_entry_h *seh = nullptr;
 	if(!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
 		return ADE_RETURN_NIL;
 
@@ -8747,12 +8747,12 @@ ade_obj<sound_h> l_Sound("sound", "sound instance handle");
 
 ADE_VIRTVAR(Pitch, l_Sound, "number", "Pitch of sound, from 100 to 100000", "number", "Pitch, or 0 if handle is invalid")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	int newpitch = 100;
 	if(!ade_get_args(L, "o|i", l_Sound.GetPtr(&sh), &newpitch))
 		return ade_set_error(L, "f", 0.0f);
 
-	if (!sh->IsSoundValid())
+	if (sh == nullptr || !sh->IsSoundValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR)
@@ -8770,11 +8770,11 @@ ADE_VIRTVAR(Pitch, l_Sound, "number", "Pitch of sound, from 100 to 100000", "num
 
 ADE_FUNC(getRemainingTime, l_Sound, NULL, "The remaining time of this sound handle", "number", "Remaining time, or -1 on error")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ade_set_error(L, "f", -1.0f);
 
-	if (!sh->IsSoundValid())
+	if (sh == nullptr || !sh->IsSoundValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	int remaining = snd_time_remaining(sh->getSignature());
@@ -8784,12 +8784,12 @@ ADE_FUNC(getRemainingTime, l_Sound, NULL, "The remaining time of this sound hand
 
 ADE_FUNC(setVolume, l_Sound, "number", "Sets the volume of this sound instance", "boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	float newVol = -1.0f;
 	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &newVol))
 		return ADE_RETURN_FALSE;
 
-	if (!sh->IsSoundValid())
+	if (sh == nullptr || !sh->IsSoundValid())
 		return ADE_RETURN_FALSE;
 
 	CAP(newVol, 0.0f, 1.0f);
@@ -8801,12 +8801,12 @@ ADE_FUNC(setVolume, l_Sound, "number", "Sets the volume of this sound instance",
 
 ADE_FUNC(setPanning, l_Sound, "number", "Sets the panning of this sound. Argument ranges from -1 for left to 1 for right", "boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	float newPan = -1.0f;
 	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &newPan))
 		return ADE_RETURN_FALSE;
 
-	if (!sh->IsSoundValid())
+	if (sh == nullptr || !sh->IsSoundValid())
 		return ADE_RETURN_FALSE;
 
 	CAP(newPan, -1.0f, 1.0f);
@@ -8822,13 +8822,13 @@ ADE_FUNC(setPosition, l_Sound, "number[,boolean = true]",
 		 "This operation fails if there is no backing soundentry!", 
 		 "boolean", "true if successfull, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	float val = -1.0f;
 	bool percent = true;
 	if(!ade_get_args(L, "of|b", l_Sound.GetPtr(&sh), &val, &percent))
 		return ADE_RETURN_FALSE;
 
-	if (!sh->IsValid())
+	if (sh == nullptr || !sh->IsValid())
 		return ADE_RETURN_FALSE;
 
 	if (val <= 0.0f)
@@ -8842,12 +8842,12 @@ ADE_FUNC(setPosition, l_Sound, "number[,boolean = true]",
 ADE_FUNC(rewind, l_Sound, "number", "Rewinds the sound by the given number of seconds<br>"
 		 "This operation fails if there is no backing soundentry!", "boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	float val = -1.0f;
 	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &val))
 		return ADE_RETURN_FALSE;
 
-	if (!sh->IsValid())
+	if (sh == nullptr || !sh->IsValid())
 		return ADE_RETURN_FALSE;
 
 	if (val <= 0.0f)
@@ -8861,12 +8861,12 @@ ADE_FUNC(rewind, l_Sound, "number", "Rewinds the sound by the given number of se
 ADE_FUNC(skip, l_Sound, "number", "Skips the given number of seconds of the sound<br>"
 		 "This operation fails if there is no backing soundentry!", "boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	float val = -1.0f;
 	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &val))
 		return ADE_RETURN_FALSE;
 
-	if (!sh->IsValid())
+	if (sh == nullptr || !sh->IsValid())
 		return ADE_RETURN_FALSE;
 
 	if (val <= 0.0f)
@@ -8879,11 +8879,11 @@ ADE_FUNC(skip, l_Sound, "number", "Skips the given number of seconds of the soun
 
 ADE_FUNC(isPlaying, l_Sound, NULL, "Specifies if this handle is currently playing", "boolean", "true if playing, false if otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ade_set_error(L, "b", false);
 
-	if (!sh->IsSoundValid())
+	if (sh == nullptr || !sh->IsSoundValid())
 		return ade_set_error(L, "b", false);
 
 	return ade_set_args(L, "b", snd_is_playing(sh->getSignature()) == 1);
@@ -8891,11 +8891,11 @@ ADE_FUNC(isPlaying, l_Sound, NULL, "Specifies if this handle is currently playin
 
 ADE_FUNC(stop, l_Sound, NULL, "Stops the sound of this handle", "boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ade_set_error(L, "b", false);
 
-	if (!sh->IsSoundValid())
+	if (sh == nullptr || !sh->IsSoundValid())
 		return ade_set_error(L, "b", false);
 
 	snd_stop(sh->getSignature());
@@ -8905,7 +8905,7 @@ ADE_FUNC(stop, l_Sound, NULL, "Stops the sound of this handle", "boolean", "true
 
 ADE_FUNC(isValid, l_Sound, NULL, "Detects whether the whole handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ADE_RETURN_NIL;
 
@@ -8915,7 +8915,7 @@ ADE_FUNC(isValid, l_Sound, NULL, "Detects whether the whole handle is valid", "b
 ADE_FUNC(isSoundValid, l_Sound, NULL, "Checks if only the sound is valid, should be used for non soundentry sounds",
 		 "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ADE_RETURN_NIL;
 
@@ -8926,14 +8926,14 @@ ade_obj<sound_h> l_Sound3D("3Dsound", "3D sound instance handle", &l_Sound);
 
 ADE_FUNC(updatePosition, l_Sound3D, "vector Position[, number radius = 0.0]", "Updates the given 3D sound with the specified position and an optional range value", "boolean", "true if succeesed, false otherwise")
 {
-	sound_h *sh;
-	vec3d *newPos = NULL;
+	sound_h *sh = nullptr;
+	vec3d *newPos = nullptr;
 	float radius = 0.0f;
 
 	if(!ade_get_args(L, "oo|f", l_Sound.GetPtr(&sh), l_Vector.GetPtr(&newPos), &radius))
 		return ade_set_error(L, "b", false);
 
-	if (!sh->IsValid() || newPos == NULL)
+	if (sh == nullptr || !sh->IsValid() || newPos == nullptr)
 		return ade_set_error(L, "b", false);
 
 	snd_update_3d_pos(sh->getSignature(), sh->Get(), newPos, radius);
@@ -9175,7 +9175,7 @@ ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship 
 {
 	int wdx;
 	int sdx;
-	object_h *ndx=NULL;
+	object_h *ndx = nullptr;
 	if(!ade_get_args(L, "oi|o", l_Wing.Get(&wdx), &sdx, l_Ship.GetPtr(&ndx)))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
@@ -9186,7 +9186,7 @@ ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship 
 	//Lua-->FS2
 	sdx--;
 
-	if(ADE_SETTING_VAR && ndx != NULL && ndx->IsValid()) {
+	if(ADE_SETTING_VAR && ndx != nullptr && ndx->IsValid()) {
 		Wings[wdx].ship_index[sdx] = ndx->objp->instance;
 	}
 
@@ -9233,19 +9233,19 @@ ade_obj<object_h> l_Ship("ship", "Ship handle", &l_Object);
 
 ADE_INDEXER(l_Ship, "string Name/number Index", "Array of ship subsystems", "subsystem", "Subsystem handle, or invalid subsystem handle if index or ship handle is invalid")
 {
-	object_h *objh;
-	char *s = NULL;
+	object_h *objh = nullptr;
+	char *s = nullptr;
 	ship_subsys_h *sub = nullptr;
 	if(!ade_get_args(L, "o|so", l_Ship.GetPtr(&objh), &s, l_Subsystem.GetPtr(&sub)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
 	ship *shipp = &Ships[objh->objp->instance];
 	ship_subsys *ss = ship_get_subsys(shipp, s);
 
-	if(ss == NULL)
+	if(ss == nullptr)
 	{
 		int idx = atoi(s);
 		if(idx > 0 && idx <= ship_get_num_subsys(shipp))
@@ -9255,7 +9255,7 @@ ADE_INDEXER(l_Ship, "string Name/number Index", "Array of ship subsystems", "sub
 		}
 	}
 
-	if(ss == NULL)
+	if(ss == nullptr)
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
 	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(objh->objp, ss)));
@@ -9263,11 +9263,11 @@ ADE_INDEXER(l_Ship, "string Name/number Index", "Array of ship subsystems", "sub
 
 ADE_FUNC(__len, l_Ship, NULL, "Number of subsystems on ship", "number", "Subsystem number, or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", ship_get_num_subsys(&Ships[objh->objp->instance]));
@@ -9275,19 +9275,19 @@ ADE_FUNC(__len, l_Ship, NULL, "Number of subsystems on ship", "number", "Subsyst
 
 ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ships' shield", "string", "Armor class name, or empty string if none is set")
 {
-	object_h *objh;
-	char *s = NULL;
-	char *name = NULL;
+	object_h *objh = nullptr;
+	char *s = nullptr;
+	char *name = nullptr;
 	
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
 	int atindex = -1;
-	if (ADE_SETTING_VAR && s != NULL) {
+	if (ADE_SETTING_VAR && s != nullptr) {
 		atindex = armor_type_get_idx(s);
 		shipp->shield_armor_type_idx = atindex;
 	}
@@ -9302,19 +9302,19 @@ ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ship
 
 ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
 {
-	object_h *objh;
-	char *s = NULL;
-	char *name = NULL;
+	object_h *objh = nullptr;
+	char *s = nullptr;
+	char *name = nullptr;
 	
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
 	int atindex = -1;
-	if (ADE_SETTING_VAR && s != NULL) {
+	if (ADE_SETTING_VAR && s != nullptr) {
 		atindex = armor_type_get_idx(s);
 		shipp->armor_type_idx = atindex;
 	}
@@ -9329,17 +9329,17 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 
 ADE_VIRTVAR(Name, l_Ship, "string", "Ship name", "string", "Ship name, or empty string if handle is invalid")
 {
-	object_h *objh;
-	char *s = NULL;
+	object_h *objh = nullptr;
+	char *s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
 
-	if(ADE_SETTING_VAR && s != NULL) {
+	if(ADE_SETTING_VAR && s != nullptr) {
 		strncpy(shipp->ship_name, s, sizeof(shipp->ship_name)-1);
 	}
 
@@ -9348,12 +9348,12 @@ ADE_VIRTVAR(Name, l_Ship, "string", "Ship name", "string", "Ship name, or empty 
 
 ADE_VIRTVAR(AfterburnerFuelLeft, l_Ship, "number", "Afterburner fuel left", "number", "Afterburner fuel left, or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float fuel = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fuel))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -9366,12 +9366,12 @@ ADE_VIRTVAR(AfterburnerFuelLeft, l_Ship, "number", "Afterburner fuel left", "num
 
 ADE_VIRTVAR(AfterburnerFuelMax, l_Ship, "number", "Afterburner fuel capacity", "number", "Afterburner fuel capacity, or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float fuel = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fuel))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship_info *sip = &Ship_info[Ships[objh->objp->instance].ship_info_index];
@@ -9384,12 +9384,12 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Ship, "number", "Afterburner fuel capacity", "
 
 ADE_VIRTVAR(Class, l_Ship, "shipclass", "Ship class", "shipclass", "Ship class, or invalid shipclass handle if ship handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	int idx=-1;
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_Shipclass.Get(&idx)))
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -9409,12 +9409,12 @@ ADE_VIRTVAR(Class, l_Ship, "shipclass", "Ship class", "shipclass", "Ship class, 
 
 ADE_VIRTVAR(CountermeasuresLeft, l_Ship, "number", "Number of countermeasures left", "number", "Countermeasures left, or 0 if ship handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	int newcm = -1;
 	if(!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &newcm))
 		return ade_set_error(L, "i", 0);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "i", 0);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -9427,12 +9427,12 @@ ADE_VIRTVAR(CountermeasuresLeft, l_Ship, "number", "Number of countermeasures le
 
 ADE_VIRTVAR(CockpitDisplays, l_Ship, "displays", "An array of the cockpit displays on this ship.<br>NOTE: Only the ship of the player has these", "displays", "displays handle or invalid handle on error")
 {
-	object_h *objh;
-	cockpit_displays_h *cdh = NULL;
+	object_h *objh = nullptr;
+	cockpit_displays_h *cdh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_CockpitDisplays.GetPtr(&cdh)))
 		return ade_set_error(L, "o", l_CockpitDisplays.Set(cockpit_displays_h()));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_CockpitDisplays.Set(cockpit_displays_h()));
 
 	if(ADE_SETTING_VAR)
@@ -9445,12 +9445,12 @@ ADE_VIRTVAR(CockpitDisplays, l_Ship, "displays", "An array of the cockpit displa
 
 ADE_VIRTVAR(CountermeasureClass, l_Ship, "weaponclass", "Weapon class mounted on this ship's countermeasure point", "weaponclass", "Countermeasure hardpoint weapon class, or invalid weaponclass handle if no countermeasure class or ship handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	int newcm = -1;
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_Weaponclass.Get(&newcm)))
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));;
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -9467,12 +9467,12 @@ ADE_VIRTVAR(CountermeasureClass, l_Ship, "weaponclass", "Weapon class mounted on
 
 ADE_VIRTVAR(HitpointsMax, l_Ship, "number", "Total hitpoints", "number", "Ship maximum hitpoints, or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float newhits = -1;
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &newhits))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -9485,12 +9485,12 @@ ADE_VIRTVAR(HitpointsMax, l_Ship, "number", "Total hitpoints", "number", "Ship m
 
 ADE_VIRTVAR(WeaponEnergyLeft, l_Ship, "number", "Current weapon energy reserves", "number", "Ship current weapon energy reserve level, or 0 if invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float neweng = -1;
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &neweng))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -9503,12 +9503,12 @@ ADE_VIRTVAR(WeaponEnergyLeft, l_Ship, "number", "Current weapon energy reserves"
 
 ADE_VIRTVAR(WeaponEnergyMax, l_Ship, "number", "Maximum weapon energy", "number", "Ship maximum weapon energy reserve level, or 0 if invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float neweng = -1;
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &neweng))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship_info *sip = &Ship_info[Ships[objh->objp->instance].ship_info_index];
@@ -9521,12 +9521,12 @@ ADE_VIRTVAR(WeaponEnergyMax, l_Ship, "number", "Maximum weapon energy", "number"
 
 ADE_VIRTVAR(AutoaimFOV, l_Ship, "number", "FOV of ship's autoaim, if any", "number", "FOV (in degrees), or 0 if ship uses no autoaim or if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float fov = -1;
 	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fov))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -9543,12 +9543,12 @@ ADE_VIRTVAR(AutoaimFOV, l_Ship, "number", "FOV of ship's autoaim, if any", "numb
 
 ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigger is pressed or not", "boolean", "True if pressed, false if not, nil if ship handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	bool trig = false;
 	if(!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &trig))
 		return ADE_RETURN_NIL;
 
-	if(!objh->IsValid())
+	if(objh == nullptr || objh->IsValid())
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
@@ -9570,17 +9570,17 @@ ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigge
 
 ADE_VIRTVAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon banks", "weaponbanktype", "Primary weapon banks, or invalid weaponbanktype handle if ship handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	ship_banktype_h *swh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_WeaponBankType.GetPtr(&swh)))
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
 	ship_weapon *dst = &Ships[objh->objp->instance].weapons;
 
-	if(ADE_SETTING_VAR && swh && swh->IsValid()) {
+	if(ADE_SETTING_VAR && swh != nullptr && swh->IsValid()) {
 		ship_weapon *src = &Ships[swh->objp->instance].weapons;
 
 		dst->current_primary_bank = src->current_primary_bank;
@@ -9601,17 +9601,17 @@ ADE_VIRTVAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon ban
 
 ADE_VIRTVAR(SecondaryBanks, l_Ship, "weaponbanktype", "Array of secondary weapon banks", "weaponbanktype", "Secondary weapon banks, or invalid weaponbanktype handle if ship handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	ship_banktype_h *swh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_WeaponBankType.GetPtr(&swh)))
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
 	ship_weapon *dst = &Ships[objh->objp->instance].weapons;
 
-	if(ADE_SETTING_VAR && swh && swh->IsValid()) {
+	if(ADE_SETTING_VAR && swh != nullptr && swh->IsValid()) {
 		ship_weapon *src = &Ships[swh->objp->instance].weapons;
 
 		dst->current_secondary_bank = src->current_secondary_bank;
@@ -9633,17 +9633,17 @@ ADE_VIRTVAR(SecondaryBanks, l_Ship, "weaponbanktype", "Array of secondary weapon
 
 ADE_VIRTVAR(TertiaryBanks, l_Ship, "weaponbanktype", "Array of tertiary weapon banks", "weaponbanktype", "Tertiary weapon banks, or invalid weaponbanktype handle if ship handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	ship_banktype_h *swh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_WeaponBankType.GetPtr(&swh)))
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
 	ship_weapon *dst = &Ships[objh->objp->instance].weapons;
 
-	if(ADE_SETTING_VAR && swh && swh->IsValid()) {
+	if(ADE_SETTING_VAR && swh != nullptr && swh->IsValid()) {
 		ship_weapon *src = &Ships[swh->objp->instance].weapons;
 
 		dst->current_tertiary_bank = src->current_tertiary_bank;
@@ -9661,22 +9661,22 @@ ADE_VIRTVAR(TertiaryBanks, l_Ship, "weaponbanktype", "Array of tertiary weapon b
 
 ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriviative of the 'object' class, such as 'ship'.", "object", "Target object, or invalid object handle if no target or ship handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	object_h *newh = nullptr;
 	//WMC - Maybe use two argument return capabilities of Lua to set/return subsystem?
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!objh->IsValid())
+	if(objh == nullptr || !objh->IsValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	ai_info *aip = NULL;
+	ai_info *aip = nullptr;
 	if(Ships[objh->objp->instance].ai_index > -1)
 		aip = &Ai_info[Ships[objh->objp->instance].ai_index];
 	else
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(ADE_SETTING_VAR && newh)
+	if(ADE_SETTING_VAR && newh != nullptr)
 	{
 		if(aip->target_signature != newh->sig)
 		{
@@ -9705,16 +9705,16 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 
 ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "subsystem", "Target subsystem, or invalid subsystem handle if no target or ship handle is invalid")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	ship_subsys_h *newh = nullptr;
 	//WMC - Maybe use two argument return capabilities of Lua to set/return subsystem?
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&oh), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(!oh->IsValid())
+	if(oh == nullptr || !oh->IsValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	ai_info *aip = NULL;
+	ai_info *aip = nullptr;
 	if(Ships[oh->objp->instance].ai_index > -1)
 		aip = &Ai_info[Ships[oh->objp->instance].ai_index];
 	else
@@ -9722,7 +9722,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->IsValid())
+		if(newh != nullptr && newh->IsValid())
 		{
 			if (aip == Player_ai) {
 				if (aip->target_signature != newh->sig)
@@ -9751,12 +9751,12 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 
 ADE_VIRTVAR(Team, l_Ship, "team", "Ship's team", "team", "Ship team, or invalid team handle if ship handle is invalid")
 {
-	object_h *oh=NULL;
+	object_h *oh = nullptr;
 	int nt=-1;
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&oh), l_Team.Get(&nt)))
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
-	if(!oh->IsValid())
+	if(oh == nullptr || !oh->IsValid())
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
 	ship *shipp = &Ships[oh->objp->instance];
@@ -9771,20 +9771,20 @@ ADE_VIRTVAR(Team, l_Ship, "team", "Ship's team", "team", "Ship team, or invalid 
 ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures", "shiptextures", "Ship textures, or invalid shiptextures handle if ship handle is invalid")
 {
 	object_h *sh = nullptr;
-	object_h *dh;
+	object_h *dh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&dh), l_Ship.GetPtr(&sh)))
 		return ade_set_error(L, "o", l_ShipTextures.Set(object_h()));
 
-	if(!dh->IsValid())
+	if(dh == nullptr || !dh->IsValid())
 		return ade_set_error(L, "o", l_ShipTextures.Set(object_h()));
 
-	if(ADE_SETTING_VAR && sh && sh->IsValid()) {
+	if(ADE_SETTING_VAR && sh != nullptr && sh->IsValid()) {
 		ship *src = &Ships[sh->objp->instance];
 		ship *dest = &Ships[dh->objp->instance];
 		
-		if (src->ship_replacement_textures != NULL)
+		if (src->ship_replacement_textures != nullptr)
 		{
-			if (dest->ship_replacement_textures == NULL)
+			if (dest->ship_replacement_textures == nullptr)
 				dest->ship_replacement_textures = (int *) vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
 			memcpy(dest->ship_replacement_textures, src->ship_replacement_textures, MAX_REPLACEMENT_TEXTURES * sizeof(int));
@@ -9796,13 +9796,13 @@ ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures", "shiptexture
 
 ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected-by-gravity\" flag", "boolean", "True if flag is set, false if flag is not set and nil on error") 
 {
-	object_h *objh=NULL;
+	object_h *objh = nullptr;
 	bool set = false;
 
 	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &set))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (objh == nullptr || !objh->IsValid())
 		return ADE_RETURN_NIL;
 	
 	ship *shipp = &Ships[objh->objp->instance];
@@ -10723,12 +10723,12 @@ ade_obj<object_h> l_Weapon("weapon", "Weapon handle", &l_Object);
 
 ADE_VIRTVAR(Class, l_Weapon, "weaponclass", "Weapon's class", "weaponclass", "Weapon class, or invalid weaponclass handle if weapon handle is invalid")
 {
-	object_h *oh=NULL;
+	object_h *oh = nullptr;
 	int nc=-1;
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&oh), l_Weaponclass.Get(&nc)))
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
 
-	if(!oh->IsValid())
+	if(oh == nullptr || !oh->IsValid())
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
 
 	weapon *wp = &Weapons[oh->objp->instance];
@@ -10742,7 +10742,7 @@ ADE_VIRTVAR(Class, l_Weapon, "weaponclass", "Weapon's class", "weaponclass", "We
 
 ADE_VIRTVAR(DestroyedByWeapon, l_Weapon, "boolean", "Whether weapon was destroyed by another weapon", "boolean", "True if weapon was destroyed by another weapon, false if weapon was destroyed by another object or if weapon handle is invalid")
 {
-	object_h *oh=NULL;
+	object_h *oh = nullptr;
 	bool b = false;
 
 	int numargs = ade_get_args(L, "o|b", l_Weapon.GetPtr(&oh), &b);
@@ -10750,7 +10750,7 @@ ADE_VIRTVAR(DestroyedByWeapon, l_Weapon, "boolean", "Whether weapon was destroye
 	if(!numargs)
 		return ade_set_error(L, "b", false);
 
-	if(!oh->IsValid())
+	if(oh == nullptr || !oh->IsValid())
 		return ade_set_error(L, "b", false);
 
 	weapon *wp = &Weapons[oh->objp->instance];
