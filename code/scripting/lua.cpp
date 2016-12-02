@@ -5329,6 +5329,20 @@ ADE_FUNC(getNextFiringPosition, l_Subsystem, NULL, "Retrieves the next position 
 	return ade_set_args(L, "oo", l_Vector.Set(gpos), l_Vector.Set(gvec));
 }
 
+ADE_FUNC(getNextFiringIndex, l_Subsystem, NULL, "Retrieves the next firing point index. This function returns an integer value.", "integer", "index of the next firing point")
+{
+	ship_subsys_h *sso = nullptr;
+	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+
+	if (!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	int idx = (sso->ss->turret_next_fire_pos % sso->ss->system_info->turret_num_firing_points) + 1;	// Convert to LUA index value
+
+	return ade_set_args(L, "i", idx);
+}
+
 ADE_FUNC(getTurretMatrix, l_Subsystem, NULL, "Returns current subsystems turret matrix", "matrix", "Turret matrix.")
 {
 	ship_subsys_h *sso;
