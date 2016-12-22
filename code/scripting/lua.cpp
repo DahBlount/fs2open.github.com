@@ -4452,7 +4452,7 @@ ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object 
 }
 
 bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f);
-ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]", "Fires weapon on turret", NULL, NULL)
+ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon bank index = 1, Flak range = 100]", "Fires weapon from turret bank at the index, 1-3 fires the primary banks, 4-7 fires the secondary banks", NULL, NULL)
 {
 	ship_subsys_h *sso;
 	int wnum = 1;
