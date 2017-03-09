@@ -61,6 +61,7 @@ static Window *Lab_render_options_window = NULL;
 static Window *Lab_material_override_window = NULL;
 static Window *Lab_variables_window = NULL;
 static Window *Lab_description_window = NULL;
+static Window *Lab_background_window = NULL;
 static Text *Lab_description_text = NULL;
 static TreeItem **Lab_species_nodes = NULL;
 
@@ -2441,7 +2442,20 @@ void labviewer_make_weap_window(Button* caller)
 	}
 }
 
+// ----------------------------- Backgrounds -----------------------------------
 
+void labviewer_close_background_window(GUIObject* caller) 
+{
+}
+
+void labviewer_make_background_window(Button* caller) 
+{
+	if (Lab_background_window != NULL) return;
+
+	Lab_background_window = (Window*)Lab_screen->Add(new Window("Mission Backgrounds", gr_screen.center_offset_x + gr_screen.center_w - 300, gr_screen.center_offset_y + 200));
+	Lab_background_window->SetCloseFunction(labviewer_close_background_window);
+
+}
 
 // ----------------------------- Lab functions ---------------------------------
 
@@ -2484,6 +2498,9 @@ void lab_init()
 
 		x += cbp->GetWidth() + 10;
 		cbp = Lab_toolbar->AddChild(new Button("Material Overrides", x, 0, labviewer_make_material_override_window));
+
+		x += cbp->GetWidth() + 10;
+		cbp = Lab_toolbar->AddChild(new Button("Backgrounds", x, 0, labviewer_make_background_window));
 	}
 
 	x += cbp->GetWidth() + 20;
