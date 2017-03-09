@@ -783,8 +783,9 @@ void labviewer_render_model_new(float frametime)
 		obj->orient =  Lab_viewer_orient;
 	else 
 	{
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Lab_skybox_orientation);
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		g3_start_instance_matrix(&Eye_position, &Lab_skybox_orientation, true);
 
 		//Set lab-specific overrides
 		Motion_debris_override = 1;
@@ -2218,7 +2219,6 @@ void labviewer_change_background(Tree* caller)
 	{
 		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();
-
 
 		flagset<Mission::Mission_Flags> flags;
 		skip_to_start_of_string("+Flags");
