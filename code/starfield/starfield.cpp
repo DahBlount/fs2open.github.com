@@ -1699,7 +1699,7 @@ void stars_draw_debris()
 	reload_old_debris = 0;
 }
 
-void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env)
+void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env, bool in_mission)
 {
 	GR_DEBUG_SCOPE("Draw Stars");
 	TRACE_SCOPE(tracing::DrawStars);
@@ -1744,7 +1744,7 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 	mprintf(( "Stars: %d\n", xt2-xt1 ));
 #endif
 
-	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && (!Cmdline_nomotiondebris) )	{
+	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && (!Cmdline_nomotiondebris) && in_mission)	{
 		stars_draw_debris();
 	}
 
