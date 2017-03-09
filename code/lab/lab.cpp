@@ -107,7 +107,8 @@ static SCP_vector<model_subsystem> Lab_ship_model_subsys;
 
 static int Lab_detail_texture_save = 0;
 
-SCP_string Lab_selected_mission;
+SCP_string Lab_selected_mission = "None";
+matrix Lab_skybox_orientation;
 
 static int anim_timer_start = 0;
 
@@ -828,7 +829,7 @@ void labviewer_render_model(float frametime)
 		vm_vec_normalize(&light_dir);
 		vm_vec_scale(&light_dir, mx*10.1f);
 		light_add_point(&light_dir,1,mx*10.2f+0.1f, 0.5f, 1.0f, 1.0f, 1.0f,-1);
-
+		
 		light_rotate_all();
 		// lighting for techroom
 	}
@@ -1261,15 +1262,19 @@ void labviewer_do_render(float frametime)
 		
 		gr_scene_texture_begin();
 
-		if (Lab_selected_mission.compare("None")) {
+		if (Lab_selected_mission.compare("None")) {		
 			g3_start_frame(1);
 			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-			gr_set_view_matrix(&Eye_position, &Eye_matrix);
+			gr_set_view_matrix(&Eye_position, &Lab_skybox_orientation);
+			g3_start_instance_matrix(&vmd_zero_vector, &Lab_skybox_orientation, true);
 
 			stars_draw(0, 1, 1, 0, 0, false);
 
-			gr_end_proj_matrix();
+			light_rotate_all();
+
+			g3_done_instance(true);
 			gr_end_view_matrix();
+			gr_end_proj_matrix();
 			g3_end_frame();
 		}
 
@@ -2462,7 +2467,6 @@ static TreeItem** Mission_directories = NULL;
 size_t Num_mission_directories = 0;
 
 char skybox_model[MAX_FILENAME_LEN];
-matrix skybox_orientation;
 int skybox_flags;
 
 int ambient_light_level;
@@ -2504,6 +2508,7 @@ void labviewer_change_background(Tree* caller)
 	Lab_selected_mission = caller->GetSelectedItem()->Name;
 
 	stars_pre_level_init(true);
+	light_reset();
 
 	if (Lab_selected_mission.compare("None")) {
 
@@ -2524,10 +2529,10 @@ void labviewer_change_background(Tree* caller)
 			stuff_string(skybox_model, F_NAME, MAX_FILENAME_LEN);
 
 
-			vm_set_identity(&skybox_orientation);
+			vm_set_identity(&Lab_skybox_orientation);
 			if (optional_string("+Skybox Orientation:"))
 			{
-				stuff_matrix(&skybox_orientation);
+				stuff_matrix(&Lab_skybox_orientation);
 			}
 
 			if (optional_string("+Skybox Flags:")) {
