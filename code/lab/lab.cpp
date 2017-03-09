@@ -978,6 +978,24 @@ void labviewer_do_render(float frametime)
 	if (Lab_model_num >= 0) {
 		labviewer_render_model_new(frametime);
 
+		gr_scene_texture_begin();
+
+		if (Lab_selected_mission.compare("None")) {
+			g3_start_frame(1);
+			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
+			gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+			stars_draw(0, 1, 1, 0, 0, false);
+
+			gr_end_proj_matrix();
+			gr_end_view_matrix();
+			g3_end_frame();
+		}
+
+		labviewer_render_model(frametime);
+
+		gr_scene_texture_end();
+
 		// print out the current pof filename, to help with... something
 		if ( strlen(Lab_model_filename) ) {
 			gr_get_string_size(&w, &h, Lab_model_filename);
