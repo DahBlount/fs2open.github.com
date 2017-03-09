@@ -751,11 +751,12 @@ void labviewer_render_model(float frametime)
 				Lab_viewer_pos.xyz.x -= (float)scale_x;
 				Lab_viewer_pos.xyz.y += (float)scale_y;
 			}
-			// zoom mode
-			else if ( dy && (Trackball_mode == 3) ) {
-				float scale_y = dy * 0.01f;
-
-				Lab_viewer_zoom += scale_y;
+			// rotate background
+			else if ( Trackball_mode == 3 ) 
+			{
+				vm_trackball(-dx, -dy, &mat1);
+				vm_matrix_x_matrix(&mat2, &mat1, &Lab_skybox_orientation);
+				Lab_skybox_orientation = mat2;
 			}
 		}
 	}
@@ -832,6 +833,16 @@ void labviewer_render_model(float frametime)
 		
 		light_rotate_all();
 		// lighting for techroom
+	}
+	else 
+	{
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Lab_skybox_orientation);
+
+		stars_draw(0, 1, 1, 0, 0, false);
+
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
 	}
 
 	render_info.set_color(255, 255, 255);
@@ -1264,22 +1275,6 @@ void labviewer_do_render(float frametime)
 		GR_DEBUG_SCOPE("Lab Render model");
 
 		gr_scene_texture_begin();
-
-		if (Lab_selected_mission.compare("None")) {		
-			g3_start_frame(1);
-			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-			gr_set_view_matrix(&Eye_position, &Lab_skybox_orientation);
-			g3_start_instance_matrix(&vmd_zero_vector, &Lab_skybox_orientation, true);
-
-			stars_draw(0, 1, 1, 0, 0, false);
-
-			light_rotate_all();
-
-			g3_done_instance(true);
-			gr_end_view_matrix();
-			gr_end_proj_matrix();
-			g3_end_frame();
-		}
 
 		labviewer_render_model(frametime);
 
@@ -2514,11 +2509,13 @@ void labviewer_change_background(Tree* caller)
 
 	stars_pre_level_init(true);
 	light_reset();
+	vm_set_identity(&Lab_skybox_orientation);
 
 	if (Lab_selected_mission.compare("None")) {
 
 		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();
+
 
 		flagset<Mission::Mission_Flags> flags;
 		skip_to_start_of_string("+Flags");
@@ -2533,8 +2530,6 @@ void labviewer_change_background(Tree* caller)
 		{
 			stuff_string(skybox_model, F_NAME, MAX_FILENAME_LEN);
 
-
-			vm_set_identity(&Lab_skybox_orientation);
 			if (optional_string("+Skybox Orientation:"))
 			{
 				stuff_matrix(&Lab_skybox_orientation);
@@ -2682,7 +2677,7 @@ void labviewer_make_background_window(Button* caller)
 {
 	if (Lab_background_window != NULL) return;
 
-	Lab_background_window = (Window*)Lab_screen->Add(new Window("Mission Backgrounds", gr_screen.center_offset_x + 50, gr_screen.center_offset_y + 50));
+	Lab_background_window = (Window*)Lab_screen->Add(new Window("Mission Backgrounds", gr_screen.center_offset_x + 100, gr_screen.center_offset_y + 50));
 
 	SCP_vector<SCP_string> missions;
 
