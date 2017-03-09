@@ -781,6 +781,10 @@ void labviewer_render_model_new(float frametime)
 		Player_obj->radius = obj->radius / 10;
 		obj->pos = Lab_viewer_pos;
 		obj->orient =  Lab_viewer_orient;
+	else 
+	{
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Lab_skybox_orientation);
 
 		//Set lab-specific overrides
 		Motion_debris_override = 1;
@@ -979,22 +983,6 @@ void labviewer_do_render(float frametime)
 		labviewer_render_model_new(frametime);
 
 		gr_scene_texture_begin();
-
-		if (Lab_selected_mission.compare("None")) {		
-			g3_start_frame(1);
-			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-			gr_set_view_matrix(&Eye_position, &Lab_skybox_orientation);
-			g3_start_instance_matrix(&vmd_zero_vector, &Lab_skybox_orientation, true);
-
-			stars_draw(0, 1, 1, 0, 0, false);
-
-			light_rotate_all();
-
-			g3_done_instance(true);
-			gr_end_view_matrix();
-			gr_end_proj_matrix();
-			g3_end_frame();
-		}
 
 		labviewer_render_model(frametime);
 
@@ -2230,6 +2218,7 @@ void labviewer_change_background(Tree* caller)
 	{
 		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();
+
 
 		flagset<Mission::Mission_Flags> flags;
 		skip_to_start_of_string("+Flags");
