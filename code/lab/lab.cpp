@@ -777,7 +777,7 @@ void labviewer_render_model_new(float frametime)
 	if (Lab_selected_object != -1) 
 	{
 		object* obj = &Objects[Lab_selected_object];
-
+		
 		Player_obj->radius = obj->radius / 10;
 		obj->pos = Lab_viewer_pos;
 		obj->orient =  Lab_viewer_orient;
@@ -980,15 +980,19 @@ void labviewer_do_render(float frametime)
 
 		gr_scene_texture_begin();
 
-		if (Lab_selected_mission.compare("None")) {
+		if (Lab_selected_mission.compare("None")) {		
 			g3_start_frame(1);
 			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-			gr_set_view_matrix(&Eye_position, &Eye_matrix);
+			gr_set_view_matrix(&Eye_position, &Lab_skybox_orientation);
+			g3_start_instance_matrix(&vmd_zero_vector, &Lab_skybox_orientation, true);
 
 			stars_draw(0, 1, 1, 0, 0, false);
 
-			gr_end_proj_matrix();
+			light_rotate_all();
+
+			g3_done_instance(true);
 			gr_end_view_matrix();
+			gr_end_proj_matrix();
 			g3_end_frame();
 		}
 
