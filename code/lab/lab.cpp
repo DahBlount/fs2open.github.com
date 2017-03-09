@@ -30,6 +30,9 @@
 #include "species_defs/species_defs.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
+#include "starfield/starfield.h"
+#include "starfield/nebula.h"
+#include "nebula/neb.h"
 
 // flags
 #define LAB_FLAG_NORMAL				(0)		// default
@@ -101,6 +104,8 @@ static ship_subsys *Lab_ship_subsys = NULL;
 static SCP_vector<model_subsystem> Lab_ship_model_subsys;
 
 static int Lab_detail_texture_save = 0;
+
+SCP_string Lab_selected_mission;
 
 static int anim_timer_start = 0;
 
@@ -805,24 +810,26 @@ void labviewer_render_model(float frametime)
 	}
 
 	
+	if (!Lab_selected_mission.compare("None"))
+	{
+		// lighting for techroom
+		light_reset();
+		vec3d light_dir = vmd_zero_vector;
+		light_dir.xyz.y = 1.0f;
+		light_dir.xyz.x = 0.0000001f;
+		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f,-1);
+		int mx, my;
+		mouse_get_pos( &mx, &my );
+		light_dir.xyz.y = 0.0000001f;
+		light_dir.xyz.x = sinf(my/150.0f);
+		light_dir.xyz.z = cosf(my/150.0f);
+		vm_vec_normalize(&light_dir);
+		vm_vec_scale(&light_dir, mx*10.1f);
+		light_add_point(&light_dir,1,mx*10.2f+0.1f, 0.5f, 1.0f, 1.0f, 1.0f,-1);
 
-	// lighting for techroom
-	light_reset();
-	vec3d light_dir = vmd_zero_vector;
-	light_dir.xyz.y = 1.0f;
-	light_dir.xyz.x = 0.0000001f;
-	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f,-1);
-	int mx, my;
-	mouse_get_pos( &mx, &my );
-	light_dir.xyz.y = 0.0000001f;
-	light_dir.xyz.x = sinf(my/150.0f);
-	light_dir.xyz.z = cosf(my/150.0f);
-	vm_vec_normalize(&light_dir);
-	vm_vec_scale(&light_dir, mx*10.1f);
-	light_add_point(&light_dir,1,mx*10.2f+0.1f, 0.5f, 1.0f, 1.0f, 1.0f,-1);
-
-	light_rotate_all();
-	// lighting for techroom
+		light_rotate_all();
+		// lighting for techroom
+	}
 
 	render_info.set_color(255, 255, 255);
 	render_info.set_detail_level_lock(Lab_model_LOD);
@@ -1254,6 +1261,18 @@ void labviewer_do_render(float frametime)
 		GR_DEBUG_SCOPE("Lab Render model");
 
 		gr_scene_texture_begin();
+
+		if (Lab_selected_mission.compare("None")) {
+			g3_start_frame(1);
+			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
+			gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+			stars_draw(0, 1, 1, 0, 0, false);
+
+			gr_end_proj_matrix();
+			gr_end_view_matrix();
+			g3_end_frame();
+		}
 
 		labviewer_render_model(frametime);
 
@@ -2442,17 +2461,254 @@ void labviewer_make_weap_window(Button* caller)
 
 // ----------------------------- Backgrounds -----------------------------------
 
-void labviewer_close_background_window(GUIObject* caller) 
+static TreeItem** Mission_directories = NULL;
+size_t Num_mission_directories = 0;
+
+char skybox_model[MAX_FILENAME_LEN];
+matrix skybox_orientation;
+int skybox_flags;
+
+int ambient_light_level;
+extern const char *Neb2_filenames[];
+
+char envmap_name[MAX_FILENAME_LEN];
+
+const char* mission_ext_list[] = { ".fs2" };
+
+SCP_string get_directory_or_vp(char* path) 
 {
+	SCP_string result(path);
+
+	// Is this a mission in a directory?
+	size_t found = result.find("data" DIR_SEPARATOR_STR "missions");
+	
+	if (found == std::string::npos)  // Guess not
+	{
+		found = result.find(".vp");
+	}
+
+	auto directory_name_pos = result.rfind(DIR_SEPARATOR_STR, found - strlen(DIR_SEPARATOR_STR) - 1);
+	
+	result = result.substr(directory_name_pos, found - directory_name_pos);
+
+	found = result.find(DIR_SEPARATOR_STR);
+	//Strip directory separators
+	while (found != std::string::npos) 
+	{
+		result.erase(found, strlen(DIR_SEPARATOR_STR));
+		found = result.find(DIR_SEPARATOR_STR);
+	}
+
+	return result;
+}
+
+void labviewer_change_background(Tree* caller) 
+{
+	Lab_selected_mission = caller->GetSelectedItem()->Name;
+
+	stars_pre_level_init(true);
+
+	if (Lab_selected_mission.compare("None")) {
+
+		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
+		reset_parse();
+
+		flagset<Mission::Mission_Flags> flags;
+		skip_to_start_of_string("+Flags");
+		if (optional_string("+Flags:"))
+			stuff_flagset(&flags);
+
+		// Are we using a skybox?
+		skip_to_start_of_string_either("$Skybox Model:", "#Background bitmaps");
+
+		strcpy_s(skybox_model, "");
+		if (optional_string("$Skybox Model:"))
+		{
+			stuff_string(skybox_model, F_NAME, MAX_FILENAME_LEN);
+
+
+			vm_set_identity(&skybox_orientation);
+			if (optional_string("+Skybox Orientation:"))
+			{
+				stuff_matrix(&skybox_orientation);
+			}
+
+			if (optional_string("+Skybox Flags:")) {
+				skybox_flags = 0;
+				stuff_int(&skybox_flags);
+			}
+			else {
+				skybox_flags = DEFAULT_NMODEL_FLAGS;
+			}
+
+			stars_set_background_model(skybox_model, NULL, skybox_flags);
+
+			skip_to_start_of_string("#Background bitmaps");
+		}
+
+		if (optional_string("#Background bitmaps")) 
+		{
+			required_string("$Num stars:");
+			stuff_int(&Num_stars);
+			if (Num_stars >= MAX_STARS)
+				Num_stars = MAX_STARS;
+
+			required_string("$Ambient light level:");
+			stuff_int(&ambient_light_level);
+
+			if (ambient_light_level == 0)
+			{
+				ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
+			}
+
+			strcpy_s(Neb2_texture_name, "Eraseme3");
+			Neb2_poof_flags = ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5));
+			if (optional_string("+Neb2:")) {
+				stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
+
+				required_string("+Neb2Flags:");
+				stuff_int(&Neb2_poof_flags);
+
+				if (flags[Mission::Mission_Flags::Fullneb]) {
+					neb2_post_level_init();
+				}
+			}
+
+			if (flags[Mission::Mission_Flags::Fullneb]) {
+				// no regular nebula stuff
+				nebula_close();
+			}
+			else 
+			{
+				if (optional_string("+Nebula:")) {
+					char str[MAX_FILENAME_LEN];
+					int z;
+					stuff_string(str, F_NAME, MAX_FILENAME_LEN);
+
+					// parse the proper nebula type (full or not)	
+					for (z = 0; z<NUM_NEBULAS; z++) {
+						if (flags[Mission::Mission_Flags::Fullneb]) {
+							if (!stricmp(str, Neb2_filenames[z])) {
+								Nebula_index = z;
+								break;
+							}
+						}
+						else {
+							if (!stricmp(str, Nebula_filenames[z])) {
+								Nebula_index = z;
+								break;
+							}
+						}
+					}
+
+					if (z == NUM_NEBULAS)
+						WarningEx(LOCATION, "Unknown nebula %s!", str);
+
+					if (optional_string("+Color:")) {
+						stuff_string(str, F_NAME, MAX_FILENAME_LEN);
+						for (z = 0; z<NUM_NEBULA_COLORS; z++) {
+							if (!stricmp(str, Nebula_colors[z])) {
+								Mission_palette = z;
+								break;
+							}
+						}
+					}
+
+					if (z == NUM_NEBULA_COLORS)
+						WarningEx(LOCATION, "Unknown nebula color %s!", str);
+
+					if (optional_string("+Pitch:")) {
+						stuff_int(&Nebula_pitch);
+					}
+					else {
+						Nebula_pitch = 0;
+					}
+
+					if (optional_string("+Bank:")) {
+						stuff_int(&Nebula_bank);
+					}
+					else {
+						Nebula_bank = 0;
+					}
+
+					if (optional_string("+Heading:")) {
+						stuff_int(&Nebula_heading);
+					}
+					else {
+						Nebula_heading = 0;
+					}
+				}
+
+				if (Nebula_index >= 0) {
+					nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
+				}
+				else {
+					nebula_close();
+				}
+			}
+
+			Num_backgrounds = 0;
+			extern void parse_one_background(background_t* background);
+			while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
+			{
+				// don't allow overflow; just make sure the last background is the last read
+				if (Num_backgrounds >= MAX_BACKGROUNDS)
+				{
+					Warning(LOCATION, "Too many backgrounds in mission!  Max is %d.", MAX_BACKGROUNDS);
+					Num_backgrounds = MAX_BACKGROUNDS - 1;
+				}
+
+				parse_one_background(&Backgrounds[Num_backgrounds]);
+				Num_backgrounds++;
+			}
+
+			stars_load_first_valid_background();
+
+			if (optional_string("$Environment Map:")) {
+				stuff_string(envmap_name, F_NAME, MAX_FILENAME_LEN);
+			}
+		}
+	}
 }
 
 void labviewer_make_background_window(Button* caller) 
 {
 	if (Lab_background_window != NULL) return;
 
-	Lab_background_window = (Window*)Lab_screen->Add(new Window("Mission Backgrounds", gr_screen.center_offset_x + gr_screen.center_w - 300, gr_screen.center_offset_y + 200));
-	Lab_background_window->SetCloseFunction(labviewer_close_background_window);
+	Lab_background_window = (Window*)Lab_screen->Add(new Window("Mission Backgrounds", gr_screen.center_offset_x + 50, gr_screen.center_offset_y + 50));
 
+	SCP_vector<SCP_string> missions;
+
+	cf_get_file_list(missions, CF_TYPE_MISSIONS, NOX("*.fs2"));
+
+	SCP_map<SCP_string, SCP_vector<SCP_string>> directories;
+	char fullpath[MAX_PATH_LEN];
+
+	for (auto filename : missions) 
+	{
+		cf_find_file_location((filename + ".fs2").c_str(), CF_TYPE_MISSIONS, sizeof(fullpath) - 1, fullpath);
+		auto location = get_directory_or_vp(fullpath);
+
+		directories[location].push_back(filename);
+	}
+
+	Num_mission_directories = directories.size();
+	Mission_directories = new TreeItem*[Num_mission_directories];
+
+	Tree* missiontree = (Tree*)Lab_background_window->AddChild(new Tree("Missions", 0, 0));
+	missiontree->AddItem(NULL, "None", 0, true, labviewer_change_background);
+
+	int i = 0;
+	for (auto directory : directories) 
+	{
+		auto directoryItem = Mission_directories[i];
+		directoryItem = missiontree->AddItem(NULL, directory.first);
+		
+		for (auto mission : directory.second) 
+		{
+			missiontree->AddItem(directoryItem, mission, 0, true, labviewer_change_background);
+		}
+	}
 }
 
 // ----------------------------- Lab functions ---------------------------------
