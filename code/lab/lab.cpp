@@ -758,6 +758,12 @@ void labviewer_render_model(float frametime)
 				vm_matrix_x_matrix(&mat2, &mat1, &Lab_skybox_orientation);
 				Lab_skybox_orientation = mat2;
 			}
+			else if (dy && Trackball_mode == 4) 
+			{
+				float scale_y = dy * 0.01f;
+
+				Lab_viewer_zoom += scale_y;
+			}
 		}
 	}
 	// otherwise do orient/rotation calculation, if we are supposed to
@@ -836,11 +842,17 @@ void labviewer_render_model(float frametime)
 	}
 	else 
 	{
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Lab_skybox_orientation);
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		g3_start_instance_matrix(&Eye_position, &Lab_skybox_orientation, true);
+
+		light_reset();
 
 		stars_draw(0, 1, 1, 0, 0, false);
 
+		light_rotate_all();
+
+		g3_done_instance(true);
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 	}
@@ -2511,11 +2523,10 @@ void labviewer_change_background(Tree* caller)
 	light_reset();
 	vm_set_identity(&Lab_skybox_orientation);
 
-	if (Lab_selected_mission.compare("None")) {
-
+	if (Lab_selected_mission.compare("None")) 
+	{
 		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();
-
 
 		flagset<Mission::Mission_Flags> flags;
 		skip_to_start_of_string("+Flags");
@@ -2677,7 +2688,7 @@ void labviewer_make_background_window(Button* caller)
 {
 	if (Lab_background_window != NULL) return;
 
-	Lab_background_window = (Window*)Lab_screen->Add(new Window("Mission Backgrounds", gr_screen.center_offset_x + 100, gr_screen.center_offset_y + 50));
+	Lab_background_window = (Window*)Lab_screen->Add(new Window("Mission Backgrounds", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50));
 
 	SCP_vector<SCP_string> missions;
 
@@ -2819,7 +2830,11 @@ void lab_do_frame(float frametime)
 		int status = GUI_system.GetStatus();
 
 		// set trackball modes
-		if (status & GST_MOUSE_LEFT_BUTTON) {
+		if (mouse_down(MOUSE_LEFT_BUTTON) && mouse_down(MOUSE_RIGHT_BUTTON)) 
+		{
+			Trackball_active = 1;
+			Trackball_mode = 4;
+		} else if (status & GST_MOUSE_LEFT_BUTTON) {
 			Trackball_active = 1;
 			Trackball_mode = 1;	// rotate
 
@@ -2975,6 +2990,7 @@ void lab_close()
 	Lab_class_window = NULL;
 	Lab_flags_window = NULL;
 	Lab_render_options_window = NULL;
+	Lab_background_window = NULL;
 
 	delete Lab_screen;
 
@@ -3022,6 +3038,8 @@ void lab_close()
 		delete[] Lab_ship_subsys;
 		Lab_ship_subsys = NULL;
 	}
+
+	Lab_selected_mission = "None";
 
 	memset( Lab_model_filename, 0, sizeof(Lab_model_filename) );
 
