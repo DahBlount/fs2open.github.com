@@ -784,8 +784,7 @@ void labviewer_render_model_new(float frametime)
 	else 
 	{
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-		g3_start_instance_matrix(&Eye_position, &Lab_skybox_orientation, true);
+		gr_set_view_matrix(&vmd_zero_vector, &Lab_skybox_orientation);
 
 		//Set lab-specific overrides
 		Motion_debris_override = 1;
@@ -2212,7 +2211,6 @@ void labviewer_change_background(Tree* caller)
 	Lab_selected_mission = caller->GetSelectedItem()->Name;
 
 	stars_pre_level_init(true);
-	light_reset();
 	vm_set_identity(&Lab_skybox_orientation);
 
 	if (Lab_selected_mission.compare("None")) 
