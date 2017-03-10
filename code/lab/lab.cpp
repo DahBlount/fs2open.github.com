@@ -842,6 +842,14 @@ void labviewer_render_model(float frametime)
 	}
 	else 
 	{
+		auto specmap_override = Specmap_color_override_set;
+		auto basemap_override = Basemap_color_override_set;
+		auto glowmap_override = Glowmap_color_override_set;
+
+		Specmap_color_override_set = false;
+		Basemap_color_override_set = false;
+		Glowmap_color_override_set = false;
+	
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&vmd_zero_vector, &Lab_skybox_orientation);
 
@@ -853,6 +861,10 @@ void labviewer_render_model(float frametime)
 
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
+
+		Specmap_color_override_set = specmap_override;
+		Basemap_color_override_set = basemap_override;
+		Glowmap_color_override_set = glowmap_override;
 	}
 
 	render_info.set_color(255, 255, 255);
