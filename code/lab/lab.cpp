@@ -783,6 +783,14 @@ void labviewer_render_model_new(float frametime)
 		obj->orient =  Lab_viewer_orient;
 	else 
 	{
+		auto specmap_override = Specmap_color_override_set;
+		auto basemap_override = Basemap_color_override_set;
+		auto glowmap_override = Glowmap_color_override_set;
+
+		Specmap_color_override_set = false;
+		Basemap_color_override_set = false;
+		Glowmap_color_override_set = false;
+	
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&vmd_zero_vector, &Lab_skybox_orientation);
 
@@ -794,6 +802,10 @@ void labviewer_render_model_new(float frametime)
 		game_render_frame(cid);
 
 		Motion_debris_override = 0;
+
+		Specmap_color_override_set = specmap_override;
+		Basemap_color_override_set = basemap_override;
+		Glowmap_color_override_set = glowmap_override;
 	}
 }
 
