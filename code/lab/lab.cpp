@@ -797,15 +797,16 @@ void labviewer_render_model(float frametime)
 		CLAMP(my_zoom, 0.08f, 1.8f);
 
 		g3_set_view_matrix(&Lab_viewer_pos, &vmd_identity_matrix, my_zoom);
-	} else {
+	}
+	else {
 		// find the largest radius
 		polymodel *pm = model_get(Lab_model_num);
 		float largest_radius = 0.0f;
 
-		Assert( pm != NULL );
+		Assert(pm != NULL);
 
 		for (i = 0; i < pm->n_models; i++) {
-			if ( !pm->submodel[i].is_thruster ) {
+			if (!pm->submodel[i].is_thruster) {
 				if (pm->submodel[i].rad > largest_radius) {
 					largest_radius = pm->submodel[i].rad;
 				}
@@ -819,7 +820,6 @@ void labviewer_render_model(float frametime)
 		g3_set_view_matrix(&Lab_viewer_pos, &vmd_identity_matrix, Lab_viewer_zoom);
 	}
 
-	
 	if (!Lab_selected_mission.compare("None"))
 	{
 		// lighting for techroom
@@ -843,8 +843,7 @@ void labviewer_render_model(float frametime)
 	else 
 	{
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-		g3_start_instance_matrix(&Eye_position, &Lab_skybox_orientation, true);
+		gr_set_view_matrix(&vmd_zero_vector, &Lab_skybox_orientation);
 
 		light_reset();
 
@@ -852,7 +851,6 @@ void labviewer_render_model(float frametime)
 
 		light_rotate_all();
 
-		g3_done_instance(true);
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 	}
@@ -2520,7 +2518,6 @@ void labviewer_change_background(Tree* caller)
 	Lab_selected_mission = caller->GetSelectedItem()->Name;
 
 	stars_pre_level_init(true);
-	light_reset();
 	vm_set_identity(&Lab_skybox_orientation);
 
 	if (Lab_selected_mission.compare("None")) 
@@ -2593,6 +2590,7 @@ void labviewer_change_background(Tree* caller)
 			}
 			else 
 			{
+				Nebula_index = -1;
 				if (optional_string("+Nebula:")) {
 					char str[MAX_FILENAME_LEN];
 					int z;
@@ -3040,6 +3038,7 @@ void lab_close()
 	}
 
 	Lab_selected_mission = "None";
+	stars_pre_level_init(true);
 
 	memset( Lab_model_filename, 0, sizeof(Lab_model_filename) );
 
