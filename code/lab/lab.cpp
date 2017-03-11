@@ -80,6 +80,7 @@ static int Lab_selected_index = -1;
 static int Lab_last_selected_ship = -1;
 static int Lab_selected_object = -1;
 static int Lab_last_selected_weapon = -1;
+static int Lab_object_index = -1;
 
 static int Lab_model_num = -1;
 static int Lab_weaponmodel_num[MAX_SHIP_WEAPONS];
@@ -98,7 +99,9 @@ static vec3d Lab_viewer_pos = ZERO_VECTOR;
  * This aligns the model so it points to the bottom left corner of the screen, 
  * which is pretty standard across 3D applications. (DahBlount)
  */
-static matrix Lab_viewer_orient = { { { {{{ -0.653643608f, 0.427322835f, 0.624616086f }}}, {{{ 0.0f, 0.825335622f, -0.564642429f }}}, {{{ -0.756802499f, -0.369074941f, -0.539475381f }}} } } };
+static matrix Lab_viewer_orient = { { { {{{ 0.836404383, 0.313801885, -0.449397534 }}},
+										{{{ 0.0485503487, 0.774259329, 0.631004393 }}},
+										{{{ 0.545959771, -0.549592316, 0.632358491 }}} } } };
 static float Lab_viewer_rotation = 0.0f;
 static int Lab_viewer_flags = LAB_MODE_NONE;
 
@@ -699,20 +702,16 @@ void labviewer_add_model_thrusters(model_render_params *render_info, ship_info *
 
 void light_set_all_relevent();
 
-void labviewer_render_model(float frametime)
+void labviewer_render_model_new(float frametime) 
 {
-	int i, j;
-	float rev_rate;
 	angles rot_angles, view_angles;
+	float rev_rate;
+
 	ship_info *sip = NULL;
 
-	if ( (Lab_mode == LAB_MODE_SHIP) && (Lab_selected_index >= 0) ) {
+	if ((Lab_mode == LAB_MODE_SHIP) && (Lab_selected_index >= 0)) {
 		sip = &Ship_info[Lab_selected_index];
 	}
-
-	model_render_params render_info;
-
-	model_clear_instance(Lab_model_num);
 
 	// get correct revolution rate
 	rev_rate = REVOLUTION_RATE;
@@ -720,13 +719,14 @@ void labviewer_render_model(float frametime)
 	if (sip != NULL) {
 		if (sip->is_big_ship()) {
 			rev_rate *= 1.7f;
-		} else if (sip->is_huge_ship()) {
+		}
+		else if (sip->is_huge_ship()) {
 			rev_rate *= 3.0f;
 		}
 
-		if (sip->uses_team_colors && !Teamcolor_override) {
-			render_info.set_team_color(Lab_team_color, "none", 0, 0);
-		}
+		//if (sip->uses_team_colors && !Teamcolor_override) {
+		//	render_info.set_team_color(Lab_team_color, "none", 0, 0);
+		//}
 	}
 
 	// rotate/pan/zoom the model as much as required for this frame
@@ -752,13 +752,13 @@ void labviewer_render_model(float frametime)
 				Lab_viewer_pos.xyz.y += (float)scale_y;
 			}
 			// rotate background
-			else if ( Trackball_mode == 3 ) 
+			else if (Trackball_mode == 3)
 			{
 				vm_trackball(-dx, -dy, &mat1);
 				vm_matrix_x_matrix(&mat2, &mat1, &Lab_skybox_orientation);
 				Lab_skybox_orientation = mat2;
 			}
-			else if (dy && Trackball_mode == 4) 
+			else if (dy && Trackball_mode == 4)
 			{
 				float scale_y = dy * 0.01f;
 
@@ -767,348 +767,32 @@ void labviewer_render_model(float frametime)
 		}
 	}
 	// otherwise do orient/rotation calculation, if we are supposed to
-	else if ( !(Lab_viewer_flags & LAB_FLAG_NO_ROTATION) ) {
-		Lab_viewer_rotation += PI2 * frametime / rev_rate;
+	else if (!(Lab_viewer_flags & LAB_FLAG_NO_ROTATION)) {
+		Lab_viewer_rotation = PI2 * frametime / rev_rate;
 
-		while (Lab_viewer_rotation > PI2)
-			Lab_viewer_rotation -= PI2;
-
-		// setup stuff needed to render the ship
-		view_angles.p = -0.6f;
-		view_angles.b = 0.0f;
-		view_angles.h = 0.0f;
-		vm_angles_2_matrix(&Lab_viewer_orient, &view_angles);
-		
 		rot_angles.p = 0.0f;
 		rot_angles.b = 0.0f;
-		rot_angles.h = 4.0f + Lab_viewer_rotation;
+		rot_angles.h = Lab_viewer_rotation;
 		vm_rotate_matrix_by_angles(&Lab_viewer_orient, &rot_angles);
 	}
 
-
-	// render the ship
-	g3_start_frame(1);
-
-	if (sip != NULL) {
-		Lab_viewer_pos.xyz.z = sip->closeup_pos.xyz.z;
-
-		float my_zoom = sip->closeup_zoom * Lab_viewer_zoom;
-		// clamp it down so that we don't get too close or too far away
-		CLAMP(my_zoom, 0.08f, 1.8f);
-
-		g3_set_view_matrix(&Lab_viewer_pos, &vmd_identity_matrix, my_zoom);
-	}
-	else {
-		// find the largest radius
-		polymodel *pm = model_get(Lab_model_num);
-		float largest_radius = 0.0f;
-
-		Assert(pm != NULL);
-
-		for (i = 0; i < pm->n_models; i++) {
-			if (!pm->submodel[i].is_thruster) {
-				if (pm->submodel[i].rad > largest_radius) {
-					largest_radius = pm->submodel[i].rad;
-				}
-			}
-		}
-
-		Lab_viewer_pos.xyz.z = -(largest_radius * 2.0f);
-
-		CLAMP(Lab_viewer_zoom, 0.08f, 1.8f);
-
-		g3_set_view_matrix(&Lab_viewer_pos, &vmd_identity_matrix, Lab_viewer_zoom);
-	}
-
-	if (!Lab_selected_mission.compare("None"))
+	if (Lab_selected_object != -1) 
 	{
-		// lighting for techroom
-		light_reset();
-		vec3d light_dir = vmd_zero_vector;
-		light_dir.xyz.y = 1.0f;
-		light_dir.xyz.x = 0.0000001f;
-		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f,-1);
-		int mx, my;
-		mouse_get_pos( &mx, &my );
-		light_dir.xyz.y = 0.0000001f;
-		light_dir.xyz.x = sinf(my/150.0f);
-		light_dir.xyz.z = cosf(my/150.0f);
-		vm_vec_normalize(&light_dir);
-		vm_vec_scale(&light_dir, mx*10.1f);
-		light_add_point(&light_dir,1,mx*10.2f+0.1f, 0.5f, 1.0f, 1.0f, 1.0f,-1);
-		
-		light_rotate_all();
-		// lighting for techroom
+		object* obj = &Objects[Lab_selected_object];
+
+		Player_obj->radius = obj->radius / 10;
+		obj->pos = Lab_viewer_pos;
+		obj->orient =  Lab_viewer_orient;
+
+		//Set lab-specific overrides
+		Motion_debris_override = 1;
+
+		camid cid = game_render_frame_setup();
+
+		game_render_frame(cid);
+
+		Motion_debris_override = 0;
 	}
-	else 
-	{
-		auto specmap_override = Specmap_color_override_set;
-		auto basemap_override = Basemap_color_override_set;
-		auto glowmap_override = Glowmap_color_override_set;
-
-		Specmap_color_override_set = false;
-		Basemap_color_override_set = false;
-		Glowmap_color_override_set = false;
-	
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&vmd_zero_vector, &Lab_skybox_orientation);
-
-		light_reset();
-
-		stars_draw(0, 1, 1, 0, 0, false);
-
-		light_rotate_all();
-
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-
-		Specmap_color_override_set = specmap_override;
-		Basemap_color_override_set = basemap_override;
-		Glowmap_color_override_set = glowmap_override;
-	}
-
-	render_info.set_color(255, 255, 255);
-	render_info.set_detail_level_lock(Lab_model_LOD);
-
-	int flagggs = Lab_model_flags;
-
-	// only render the insignia when the flag is set
-	if (Lab_viewer_flags & LAB_FLAG_SHOW_INSIGNIA) {
-		render_info.set_insignia_bitmap(Lab_insignia_bitmap);
-	}
-
-	// render special if we are showing debris
-	if (Lab_viewer_flags & LAB_FLAG_SHOW_DEBRIS) {
-		polymodel *pm = model_get(Lab_model_num);
-
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-		for (i = 0; i < pm->num_debris_objects; i++) {
-			vec3d world_point = ZERO_VECTOR;
-
-			model_find_world_point(&world_point, &pm->submodel[pm->debris_objects[i]].offset, Lab_model_num, -1, &Lab_viewer_orient, &vmd_zero_vector);
-			Shadow_override = true;
-
-			render_info.set_flags(Lab_model_flags);
-
-			submodel_render_immediate(&render_info, Lab_model_num, pm->debris_objects[i], &Lab_viewer_orient, &world_point);
-			Shadow_override = false;
-		}
-	}
-	// render normally otherwise
-	else {
-		// show damage arcs if wanted
-		if ( (sip != NULL) && (Lab_viewer_flags & LAB_FLAG_LIGHTNING_ARCS) ) {
-			labviewer_add_model_arcs();
-		}
-
-		// ship/weapon thrusters
-		if (Lab_model_flags & MR_SHOW_THRUSTERS) {
-			labviewer_add_model_thrusters(&render_info, sip);
-		}
-
-		// do initial rotation
-		if (sip != NULL) {
-			if (Lab_viewer_flags & LAB_FLAG_INITIAL_ROTATION) {
-				for (i = 0; i < sip->n_subsystems; i++) {
-					if (Lab_ship_model_subsys[i].type == SUBSYSTEM_TURRET) {
-												
-						for (j = 0; j < Lab_ship_model_subsys[i].n_triggers; j++) {
-						
-							// special case for turrets
-							Lab_ship_subsys[i].submodel_info_2.angs.p = Lab_ship_model_subsys[i].triggers[j].angle.xyz.x;
-							Lab_ship_subsys[i].submodel_info_1.angs.h = Lab_ship_model_subsys[i].triggers[j].angle.xyz.y;
-						}
-						if ( Lab_ship_model_subsys[i].subobj_num >= 0 )	{
-							model_set_instance(Lab_model_num, Lab_ship_model_subsys[i].subobj_num, &Lab_ship_subsys[i].submodel_info_1 );
-						}
-						if ( (Lab_ship_model_subsys[i].subobj_num != Lab_ship_model_subsys[i].turret_gun_sobj) && (Lab_ship_model_subsys[i].turret_gun_sobj >= 0) )		{
-							model_set_instance(Lab_model_num, Lab_ship_model_subsys[i].turret_gun_sobj, &Lab_ship_subsys[i].submodel_info_2 );
-						}
-					}
-				} 
-			}
-		}
-
-		// rotate submodels if wanted
-		if ( (sip != NULL) && (Lab_viewer_flags & LAB_FLAG_SUBMODEL_ROTATE) ) {
-			for (i = 0; i < sip->n_subsystems; i++) {
-				if ( !(Lab_ship_model_subsys[i].flags[Model::Subsystem_Flags::Rotates]) ) {
-					continue;
-				}
-				
-				model_set_instance(Lab_model_num, Lab_ship_model_subsys[i].subobj_num, &Lab_ship_subsys[i].submodel_info_1 );
-
-				// if we got this far, we can rotate - so choose which method to use
-				if (Lab_ship_model_subsys[i].flags[Model::Subsystem_Flags::Stepped_rotate]) {
-					submodel_stepped_rotate(&Lab_ship_model_subsys[i], &Lab_ship_subsys[i].submodel_info_1);
-				} else {
-					submodel_rotate(&Lab_ship_model_subsys[i], &Lab_ship_subsys[i].submodel_info_1 );
-				}
-			}
-		}
-
-		if (sip != NULL) {
-			if (Lab_viewer_flags & LAB_FLAG_DESTROYED_SUBSYSTEMS) {
-				model_show_damaged(Lab_model_num, 1);
-			}
-		}
-
-		// Deal with tabled replacement textures
-		if (sip != NULL && sip->replacement_textures.size() > 0) 
-		{			
-			render_info.set_replacement_textures(Lab_model_num, sip->replacement_textures);
-		}
-		
-		if( !( flagggs & MR_NO_LIGHTING ) && Cmdline_shadow_quality ) {
-			polymodel *pm = model_get(Lab_model_num);
-
-			shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect,  -Lab_viewer_pos.xyz.z + pm->rad, -Lab_viewer_pos.xyz.z + pm->rad + 200.0f, -Lab_viewer_pos.xyz.z + pm->rad + 2000.0f, -Lab_viewer_pos.xyz.z + pm->rad + 10000.0f);
-
-			render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
-
-			model_render_immediate(&render_info, Lab_model_num, &Lab_viewer_orient, &vmd_zero_vector);
-
-			//render weapon models if selected
-			if ( Lab_mode == LAB_MODE_SHIP && ( Lab_viewer_flags & LAB_FLAG_SHOW_WEAPONS ) ) {
-				int k,l;
-				g3_start_instance_matrix(&vmd_zero_vector, &Lab_viewer_orient, true);
-				l = 0;
-
-				// no thrusters for attached missiles
-				int render_flags = MR_NO_TEXTURING | MR_NO_LIGHTING;
-
-				//primary weapons
-				for (j = 0; j < sip->num_primary_banks; j++) {
-					if (!sip->draw_primary_models[j])
-						continue;
-					if (Lab_weaponmodel_num[l] >= 0) {
-						w_bank *bank = &model_get(Lab_model_num)->gun_banks[j];
-						for(k = 0; k < bank->num_slots; k++) {	
-
-							render_info.set_flags(render_flags);
-							render_info.set_object_number(-1);
-							model_render_immediate(&render_info, Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k]);
-						}
-					}
-					l++;
-				}
-				//secondary weapons
-				vec3d secondary_weapon_pos;
-				w_bank* bank;
-
-				for (j = 0; j < sip->num_secondary_banks; j++) {
-					if (!sip->draw_secondary_models[j])
-						continue;
-					if (Lab_weaponmodel_num[l] >= 0) {
-						bank = &(model_get(Lab_model_num))->missile_banks[j];
-						if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
-							for(k = 0; k < bank->num_slots; k++) {
-								render_info.set_flags(render_flags);
-								render_info.set_object_number(-1);
-								model_render_immediate(&render_info, Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k]);
-							}
-						} else {
-							for(k = 0; k < bank->num_slots; k++)
-							{
-								secondary_weapon_pos = bank->pnt[k];
-								render_info.set_flags(render_flags);
-								render_info.set_object_number(-1);
-								model_render_immediate(&render_info, Lab_weaponmodel_num[l], &vmd_identity_matrix, &secondary_weapon_pos);
-							}
-						}
-					}
-					l++;
-				}
-				g3_done_instance(true);
-			}
-
-			shadows_end_render();
-		}
-
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-		gr_opengl_deferred_lighting_begin();
-
-// 		render_info.set_animated_effect(
-// 			ANIMATED_SHADER_LOADOUTSELECT_FS1, 
-// 			MIN((timer_get_milliseconds()-anim_timer_start)/1500.0f, 2.0f)
-// 		);
-
-		//render weapon models if selected
-		if (Lab_mode == LAB_MODE_SHIP && (Lab_viewer_flags & LAB_FLAG_SHOW_WEAPONS)) {
-			int k,l;
-			g3_start_instance_matrix(&vmd_zero_vector, &Lab_viewer_orient, true);
-			l = 0;
-
-			// no thrusters for attached missiles
-			int render_flags = flagggs;
-			render_flags &= ~MR_SHOW_THRUSTERS;
-
-			//primary weapons
-			for (j = 0; j < sip->num_primary_banks; j++) {
-				if (!sip->draw_primary_models[j])
-					continue;
-				if (Lab_weaponmodel_num[l] >= 0) {
-					w_bank *bank = &model_get(Lab_model_num)->gun_banks[j];
-					for(k = 0; k < bank->num_slots; k++) {	
-						render_info.set_flags(render_flags);
-						render_info.set_object_number(-1);
-						model_render_immediate(&render_info, Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k]);
-					}
-				}
-				l++;
-			}
-			//secondary weapons
-			vec3d secondary_weapon_pos;
-			w_bank* bank;
-
-			for (j = 0; j < sip->num_secondary_banks; j++) {
-				if (!sip->draw_secondary_models[j])
-					continue;
-				if (Lab_weaponmodel_num[l] >= 0) {
-					bank = &(model_get(Lab_model_num))->missile_banks[j];
-					if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
-						for(k = 0; k < bank->num_slots; k++) {
-							render_info.set_flags(render_flags);
-							model_render_immediate(&render_info, Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k]);
-						}
-					} else {
-						for(k = 0; k < bank->num_slots; k++)
-						{
-							secondary_weapon_pos = bank->pnt[k];
-							render_info.set_flags(render_flags);
-							render_info.set_object_number(-1);
-							model_render_immediate(&render_info, Lab_weaponmodel_num[l], &vmd_identity_matrix, &secondary_weapon_pos);
-						}
-					}
-				}
-				l++;
-			}
-			g3_done_instance(true);
-		}
-
-		render_info.set_debug_flags(Lab_model_debug_flags);
-		render_info.set_flags(flagggs);
-
-		model_render_immediate(&render_info, Lab_model_num, &Lab_viewer_orient, &vmd_zero_vector, MODEL_RENDER_OPAQUE);
-		gr_opengl_deferred_lighting_end();
-		gr_opengl_deferred_lighting_finish();
-		bool gpo_save = Glowpoint_override;
-		Glowpoint_override = true;
-		model_render_immediate(&render_info, Lab_model_num, &Lab_viewer_orient, &vmd_zero_vector, MODEL_RENDER_TRANS);
-		Glowpoint_override = gpo_save;
-	}
-
-	batching_render_all();
-	gr_copy_effect_texture();
-	batching_render_all(true);
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-
-	g3_end_frame();
 }
 
 void labviewer_render_bitmap(float frametime)
@@ -1294,13 +978,7 @@ void labviewer_do_render(float frametime)
 
 	// render our particular thing
 	if (Lab_model_num >= 0) {
-		GR_DEBUG_SCOPE("Lab Render model");
-
-		gr_scene_texture_begin();
-
-		labviewer_render_model(frametime);
-
-		gr_scene_texture_end();
+		labviewer_render_model_new(frametime);
 
 		// print out the current pof filename, to help with... something
 		if ( strlen(Lab_model_filename) ) {
@@ -2283,18 +1961,13 @@ void labviewer_change_ship_lod(Tree* caller)
 		labviewer_change_bitmap();
 
 		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
-		Lab_selected_object = ship_create(&vmd_identity_matrix, &vmd_zero_vector, ship_index);
-
-		// unload the model we just loaded
-		model_page_out_textures(Ship_info[ship_index].model_num, true);
-		model_unload(Ship_info[ship_index].model_num);
-		Ship_info[ship_index].model_num = -1;
 	}
 	else
 	{
 		obj_delete(Lab_selected_object);
-		Lab_selected_object = ship_create(&vmd_identity_matrix, &vmd_zero_vector, ship_index);
 	}
+	
+	Lab_selected_object = ship_create(&Lab_viewer_orient, &Lab_viewer_pos, ship_index);
 
 	Lab_last_selected_ship = Lab_selected_index;
 
@@ -2323,8 +1996,9 @@ void labviewer_change_ship(Tree *caller)
 	if ( !Lab_in_mission ) {
 		return;
 	}
-
 	Lab_selected_index = (int)(caller->GetSelectedItem()->GetData());
+
+	Lab_selected_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());	
 
 	labviewer_update_desc_window();
 	labviewer_update_flags_window();
@@ -2530,6 +2204,7 @@ void labviewer_change_background(Tree* caller)
 	Lab_selected_mission = caller->GetSelectedItem()->Name;
 
 	stars_pre_level_init(true);
+	light_reset();
 	vm_set_identity(&Lab_skybox_orientation);
 
 	if (Lab_selected_mission.compare("None")) 
@@ -2814,6 +2489,15 @@ void lab_init()
 	// disable model rotation by default in the lab
 	Lab_viewer_flags |= LAB_FLAG_NO_ROTATION;
 	Lab_viewer_flags |= LAB_FLAG_INITIAL_ROTATION;
+
+
+	flagset<Object::Object_Flags> obs_flags;
+	auto obj_index = obj_create(OBJ_OBSERVER, -1, 0, &vmd_identity_matrix, &vmd_zero_vector, 0, obs_flags);
+
+	Player_obj = &Objects[obj_index];
+	Viewer_obj = Player_obj;
+
+	Viewer_mode = VM_EXTERNAL;
 }
 
 #include "controlconfig/controlsconfig.h"
