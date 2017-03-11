@@ -787,12 +787,9 @@ void labviewer_render_model_new(float frametime)
 		auto basemap_override = Basemap_color_override_set;
 		auto glowmap_override = Glowmap_color_override_set;
 
-		Specmap_color_override_set = false;
-		Basemap_color_override_set = false;
-		Glowmap_color_override_set = false;
-	
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&vmd_zero_vector, &Lab_skybox_orientation);
+		Player_obj->radius = obj->radius / 10;
+		obj->pos = Lab_viewer_pos;
+		obj->orient =  Lab_viewer_orient;
 
 		//Set lab-specific overrides
 		Motion_debris_override = 1;
@@ -802,10 +799,6 @@ void labviewer_render_model_new(float frametime)
 		game_render_frame(cid);
 
 		Motion_debris_override = 0;
-
-		Specmap_color_override_set = specmap_override;
-		Basemap_color_override_set = basemap_override;
-		Glowmap_color_override_set = glowmap_override;
 	}
 }
 
@@ -993,12 +986,6 @@ void labviewer_do_render(float frametime)
 	// render our particular thing
 	if (Lab_model_num >= 0) {
 		labviewer_render_model_new(frametime);
-
-		gr_scene_texture_begin();
-
-		labviewer_render_model(frametime);
-
-		gr_scene_texture_end();
 
 		// print out the current pof filename, to help with... something
 		if ( strlen(Lab_model_filename) ) {
@@ -2016,6 +2003,7 @@ void labviewer_change_ship(Tree *caller)
 	if ( !Lab_in_mission ) {
 		return;
 	}
+	Lab_selected_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());	
 
 	Lab_selected_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());	
 
@@ -2223,6 +2211,7 @@ void labviewer_change_background(Tree* caller)
 	Lab_selected_mission = caller->GetSelectedItem()->Name;
 
 	stars_pre_level_init(true);
+	light_reset();
 	vm_set_identity(&Lab_skybox_orientation);
 
 	if (Lab_selected_mission.compare("None")) 
