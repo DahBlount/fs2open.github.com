@@ -92,16 +92,17 @@ static int Lab_bitmap_id = -1;
 static char Lab_bitmap_filename[MAX_FILENAME_LEN];
 
 static float Lab_viewer_zoom = 1.2f;
-static vec3d Lab_viewer_pos = ZERO_VECTOR;
+static vec3d Lab_model_pos = ZERO_VECTOR;
 /* Lab_viewer_orients default value is a PBH of -0.6, 0.0, 4.0 in radians, with the rotations applied in P, B, H order. 
  * This aligns the model so it points to the bottom left corner of the screen, 
  * which is pretty standard across 3D applications. (DahBlount)
  */
-static matrix Lab_viewer_orient = { { { {{{ 0.836404383, 0.313801885, -0.449397534 }}},
-										{{{ 0.0485503487, 0.774259329, 0.631004393 }}},
-										{{{ 0.545959771, -0.549592316, 0.632358491 }}} } } };
-static float Lab_viewer_rotation = 0.0f;
+static matrix Lab_model_orient = { { { {{{ 0.836404383f, 0.313801885f, -0.449397534f }}},
+										{{{ 0.0485503487f, 0.774259329f, 0.631004393f }}},
+										{{{ 0.545959771f, -0.549592316f, 0.632358491f }}} } } };
+static float Lab_model_rotation = 0.0f;
 static int Lab_viewer_flags = LAB_MODE_NONE;
+static vec3d Lab_viewer_position = vmd_zero_vector;
 
 static ship_subsys *Lab_ship_subsys = NULL;
 static SCP_vector<model_subsystem> Lab_ship_model_subsys;
@@ -109,16 +110,9 @@ static SCP_vector<model_subsystem> Lab_ship_model_subsys;
 static int Lab_detail_texture_save = 0;
 
 SCP_string Lab_selected_mission = "None";
-matrix Lab_skybox_orientation;
+matrix Lab_skybox_orientation = vmd_identity_matrix;
 
 static int anim_timer_start = 0;
-
-// damage lightning stuff
-static vec3d Lab_arc_pts[MAX_SHIP_ARCS][2];
-static int Lab_arc_timestamp[MAX_SHIP_ARCS];
-static ubyte Lab_arc_type[MAX_SHIP_ARCS];
-static int Lab_arc_next_time = -1;
-static bool Lab_arc_disrupted = false;
 
 static float Lab_thrust_len = 1.0f;
 static bool Lab_thrust_afterburn = false;
@@ -222,6 +216,29 @@ void labviewer_change_bitmap(int ship_index = -1, int weapon_index = -1)
 	labviewer_update_flags_window();
 }
 
+void rotate_view(int dx, int dy)
+{
+	matrix mat1, mat2;
+
+	vm_trackball(-dx, -dy, &mat1);
+	vm_matrix_x_matrix(&mat2, &mat1, &Lab_skybox_orientation);
+
+	Lab_skybox_orientation = mat2;
+
+	vec3d tmp = vmd_zero_vector;
+	tmp.xyz.z = Objects[Lab_selected_object].radius * 1.7f;
+	vm_vec_rotate(&Lab_viewer_position, &tmp, &mat2);
+	vm_vec_sub(&Lab_viewer_position, &vmd_zero_vector, &Lab_viewer_position);
+
+	float xzdist = sqrt(Lab_viewer_position.xyz.x * Lab_viewer_position.xyz.x + Lab_viewer_position.xyz.z * Lab_viewer_position.xyz.z);
+	angles tmpang;
+	tmpang.h = atan2(Lab_viewer_position.xyz.x, Lab_viewer_position.xyz.z);
+	tmpang.p = -atan2(Lab_viewer_position.xyz.y, xzdist);
+	tmpang.b = 0.0f;
+
+	vm_angles_2_matrix(&Player_obj->orient, &tmpang);
+}
+
 void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 {
 	bool change_model = true;
@@ -264,10 +281,12 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 		Lab_viewer_zoom = 1.2f;
 
 		if (valid_ship) {
-			memcpy( &Lab_viewer_pos, &Ship_info[sel_index].closeup_pos, sizeof(vec3d) );
+			memcpy( &Lab_viewer_position, &Ship_info[sel_index].closeup_pos, sizeof(vec3d) );
 		} else {
-			Lab_viewer_pos.xyz.x = Lab_viewer_pos.xyz.y = 0.0f;
+			Lab_viewer_position.xyz.x = Lab_viewer_position.xyz.y = 0.0f;
 		}
+
+		rotate_view(0, 0);
 
 		// only load a new model if we are supposed to (so that we can use this function to reset states)
 		if (model_fname != NULL) {
@@ -359,7 +378,7 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 
 void light_set_all_relevent();
 
-void labviewer_render_model_new(float frametime) 
+void labviewer_render_model(float frametime)
 {
 	angles rot_angles, view_angles;
 	float rev_rate;
@@ -397,23 +416,21 @@ void labviewer_render_model_new(float frametime)
 			// rotation mode
 			if (Trackball_mode == 1) {
 				vm_trackball(-dx, -dy, &mat1);
-				vm_matrix_x_matrix(&mat2, &mat1, &Lab_viewer_orient);
-				Lab_viewer_orient = mat2;
+				vm_matrix_x_matrix(&mat2, &mat1, &Lab_model_orient);
+				Lab_model_orient = mat2;
 			}
 			// pan mode
 			else if (Trackball_mode == 2) {
 				double scale_x = dx * (double)model_get_radius(Lab_model_num) * 0.005;
 				double scale_y = dy * (double)model_get_radius(Lab_model_num) * 0.005;
 
-				Lab_viewer_pos.xyz.x -= (float)scale_x;
-				Lab_viewer_pos.xyz.y += (float)scale_y;
+				Lab_model_pos.xyz.x -= (float)scale_x;
+				Lab_model_pos.xyz.y += (float)scale_y;
 			}
 			// rotate background
 			else if (Trackball_mode == 3)
 			{
-				vm_trackball(-dx, -dy, &mat1);
-				vm_matrix_x_matrix(&mat2, &mat1, &Lab_skybox_orientation);
-				Lab_skybox_orientation = mat2;
+				rotate_view(dx, dy);
 			}
 			else if (dy && Trackball_mode == 4)
 			{
@@ -424,13 +441,12 @@ void labviewer_render_model_new(float frametime)
 		}
 	}
 	// otherwise do orient/rotation calculation, if we are supposed to
-	else if (!(Lab_viewer_flags & LAB_FLAG_NO_ROTATION)) {
-		Lab_viewer_rotation = PI2 * frametime / rev_rate;
-
+	else if (!(Lab_viewer_flags & LAB_FLAG_NO_ROTATION)) 
+	{
 		rot_angles.p = 0.0f;
 		rot_angles.b = 0.0f;
-		rot_angles.h = Lab_viewer_rotation;
-		vm_rotate_matrix_by_angles(&Lab_viewer_orient, &rot_angles);
+		rot_angles.h = PI2 * frametime / rev_rate;
+		vm_rotate_matrix_by_angles(&Lab_model_orient, &rot_angles);
 	}
 
 	if (Lab_selected_object != -1) 
@@ -447,8 +463,9 @@ void labviewer_render_model_new(float frametime)
 		auto glowmap_override = Glowmap_color_override_set;
 
 		Player_obj->radius = 1;
-		obj->pos = Lab_viewer_pos;
-		obj->orient = Lab_viewer_orient;
+		Player_obj->pos = Lab_viewer_position;
+		obj->pos = Lab_model_pos;
+		obj->orient = Lab_model_orient;
 
 		//Set lab-specific overrides
 		Motion_debris_override = 1;
@@ -493,16 +510,16 @@ void labviewer_render_bitmap(float frametime)
 			// rotation mode
 			if (Trackball_mode == 1) {
 				vm_trackball(-dx, -dy, &mat1);
-				vm_matrix_x_matrix(&mat2, &mat1, &Lab_viewer_orient);
-				Lab_viewer_orient = mat2;
+				vm_matrix_x_matrix(&mat2, &mat1, &Lab_model_orient);
+				Lab_model_orient = mat2;
 			}
 			// pan mode
 			else if (Trackball_mode == 2) {
 				double scale_x = dx * (double)wip->laser_length * 0.005;
 				double scale_y = dy * (double)wip->laser_length * 0.005;
 
-				Lab_viewer_pos.xyz.x -= (float)scale_x;
-				Lab_viewer_pos.xyz.y += (float)scale_y;
+				Lab_model_pos.xyz.x -= (float)scale_x;
+				Lab_model_pos.xyz.y += (float)scale_y;
 			}
 			// zoom mode
 			else if ( dy && (Trackball_mode == 3) ) {
@@ -514,31 +531,31 @@ void labviewer_render_bitmap(float frametime)
 	}
 	// otherwise do orient/rotation calculation, if we are supposed to
 	else if ( !(Lab_viewer_flags & LAB_FLAG_NO_ROTATION) ) {
-		Lab_viewer_rotation += PI2 * frametime / rev_rate;
+		Lab_model_rotation += PI2 * frametime / rev_rate;
 
-		while (Lab_viewer_rotation > PI2) {
-			Lab_viewer_rotation -= PI2;
+		while (Lab_model_rotation > PI2) {
+			Lab_model_rotation -= PI2;
 		}
 
 		// setup stuff needed to render the ship
 		view_angles.p = -0.6f;
 		view_angles.b = 0.0f;
 		view_angles.h = 0.0f;
-		vm_angles_2_matrix(&Lab_viewer_orient, &view_angles);
+		vm_angles_2_matrix(&Lab_model_orient, &view_angles);
 
 		rot_angles.p = 0.0f;
 		rot_angles.b = 0.0f;
-		rot_angles.h = Lab_viewer_rotation;
-		vm_rotate_matrix_by_angles(&Lab_viewer_orient, &rot_angles);
+		rot_angles.h = Lab_model_rotation;
+		vm_rotate_matrix_by_angles(&Lab_model_orient, &rot_angles);
 	}
 
 	g3_start_frame(1);
 
-	Lab_viewer_pos.xyz.z = -(wip->laser_length * 2.0f);
+	Lab_model_pos.xyz.z = -(wip->laser_length * 2.0f);
 
 	CLAMP(Lab_viewer_zoom, 0.08f, 1.8f);
 
-	g3_set_view_matrix(&Lab_viewer_pos, &vmd_identity_matrix, Lab_viewer_zoom * 1.3f);
+	g3_set_view_matrix(&Lab_model_pos, &vmd_identity_matrix, Lab_viewer_zoom * 1.3f);
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
@@ -554,7 +571,7 @@ void labviewer_render_bitmap(float frametime)
 	}
 
 	vec3d headp;
-	vm_vec_scale_add(&headp, &vmd_zero_vector, &Lab_viewer_orient.vec.fvec, wip->laser_length);
+	vm_vec_scale_add(&headp, &vmd_zero_vector, &Lab_model_orient.vec.fvec, wip->laser_length);
 
 	//gr_set_bitmap(wip->laser_bitmap.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 	if(wip->laser_length > 0.0001f) {
@@ -587,8 +604,8 @@ void labviewer_render_bitmap(float frametime)
 								(int)((float)wip->laser_color_1.blue + (((float)wip->laser_color_2.blue - (float)wip->laser_color_1.blue) * pct)) );
 		}
 
-		vm_vec_scale_add(&headp2, &vmd_zero_vector, &Lab_viewer_orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
-		vm_vec_scale_add(&tailp, &vmd_zero_vector, &Lab_viewer_orient.vec.fvec, wip->laser_length * (1 -  weapon_glow_scale_l) );
+		vm_vec_scale_add(&headp2, &vmd_zero_vector, &Lab_model_orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
+		vm_vec_scale_add(&tailp, &vmd_zero_vector, &Lab_model_orient.vec.fvec, wip->laser_length * (1 -  weapon_glow_scale_l) );
 
 		framenum = 0;
 
@@ -644,7 +661,7 @@ void labviewer_do_render(float frametime)
 
 	// render our particular thing
 	if (Lab_model_num >= 0) {
-		labviewer_render_model_new(frametime);
+		labviewer_render_model(frametime);
 
 		// print out the current pof filename, to help with... something
 		if ( strlen(Lab_model_filename) ) {
@@ -1633,7 +1650,7 @@ void labviewer_change_ship_lod(Tree* caller)
 		obj_delete(Lab_selected_object);
 	}
 	
-	Lab_selected_object = ship_create(&Lab_viewer_orient, &Lab_viewer_pos, ship_index);
+	Lab_selected_object = ship_create(&Lab_model_orient, &Lab_model_pos, ship_index);
 
 	Lab_last_selected_ship = Lab_selected_index;
 
@@ -1648,12 +1665,6 @@ void labviewer_change_ship_lod(Tree* caller)
 	labviewer_update_desc_window();
 	labviewer_update_flags_window();
 	labviewer_update_variables_window();
-
-	for (int i = 0; i < MAX_SHIP_ARCS; i++) {
-		Lab_arc_timestamp[i] = -1;
-		Lab_arc_type[i] = MARC_TYPE_NORMAL;
-		Lab_arc_next_time = -1;
-	}
 }
 
 void labviewer_change_ship(Tree *caller)
@@ -2127,12 +2138,10 @@ void lab_init()
 
 	// reset some defaults, just to be sure
 	Lab_viewer_zoom = 1.2f;
-	Lab_viewer_pos.xyz.x = Lab_viewer_pos.xyz.y = 0.0f;
+	Lab_model_pos.xyz.x = Lab_model_pos.xyz.y = 0.0f;
 	Lab_mode = LAB_MODE_NONE;
 	Lab_thrust_len = 1.0f;
 	Lab_thrust_afterburn = false;
-	Lab_arc_next_time = -1;
-	Lab_arc_disrupted = false;
 	for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
 		Lab_weaponmodel_num[i] = -1;
 	}
@@ -2167,6 +2176,7 @@ void lab_init()
 }
 
 #include "controlconfig/controlsconfig.h"
+#include "lab.h"
 void lab_do_frame(float frametime)
 {
 	GR_DEBUG_SCOPE("Lab Frame");
@@ -2235,8 +2245,7 @@ void lab_do_frame(float frametime)
 
 			// change between damage lightning effects
 			case KEY_L:
-				Lab_arc_disrupted = !Lab_arc_disrupted;
-				Lab_arc_next_time = -1;
+				// REIMPLEMENT
 				break;
 
 			// Adjust FXAA presets
