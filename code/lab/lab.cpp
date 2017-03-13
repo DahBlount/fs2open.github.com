@@ -1643,7 +1643,7 @@ void labviewer_change_ship_lod(Tree* caller)
 		obj_delete(Lab_selected_object);
 	}
 	
-	Lab_selected_object = ship_create(&Lab_model_orient, &Lab_model_pos, ship_index);
+	Lab_selected_object = ship_create(&vmd_identity_matrix, &Lab_model_pos, ship_index);
 
 	Lab_last_selected_ship = Lab_selected_index;
 
@@ -2131,7 +2131,7 @@ void lab_init()
 
 	// reset some defaults, just to be sure
 	Lab_viewer_zoom = 1.2f;
-	Lab_model_pos.xyz.x = Lab_model_pos.xyz.y = 0.0f;
+	Lab_model_pos = vmd_zero_vector;
 	Lab_mode = LAB_MODE_NONE;
 	Lab_thrust_len = 1.0f;
 	Lab_thrust_afterburn = false;
