@@ -218,6 +218,8 @@ void labviewer_change_bitmap(int ship_index = -1, int weapon_index = -1)
 
 void rotate_view(int dx, int dy)
 {
+	if (dx == 0 && dy == 0) return;
+
 	matrix mat1, mat2;
 
 	vm_trackball(-dx, -dy, &mat1);
@@ -285,8 +287,6 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 		} else {
 			Lab_viewer_position.xyz.x = Lab_viewer_position.xyz.y = 0.0f;
 		}
-
-		rotate_view(0, 0);
 
 		// only load a new model if we are supposed to (so that we can use this function to reset states)
 		if (model_fname != NULL) {
