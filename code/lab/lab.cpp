@@ -661,7 +661,7 @@ void labviewer_do_render(float frametime)
 
 	// render our particular thing
 	if (Lab_model_num >= 0) {
-		labviewer_render_model(frametime);
+		labviewer_render_model_new(frametime);
 
 		// print out the current pof filename, to help with... something
 		if ( strlen(Lab_model_filename) ) {
