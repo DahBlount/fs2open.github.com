@@ -286,3 +286,5 @@ CMakeSettings.json
 
 # Weird files created by Linux
 .fuse_hidden*
+*.orig
+/code/lab/lab.cpp.orig

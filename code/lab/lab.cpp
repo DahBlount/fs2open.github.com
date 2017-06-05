@@ -99,9 +99,9 @@ static vec3d Lab_model_pos = ZERO_VECTOR;
  * This aligns the model so it points to the bottom left corner of the screen, 
  * which is pretty standard across 3D applications. (DahBlount)
  */
-static matrix Lab_viewer_orient = { { { {{{ 0.836404383, 0.313801885, -0.449397534 }}},
-										{{{ 0.0485503487, 0.774259329, 0.631004393 }}},
-										{{{ 0.545959771, -0.549592316, 0.632358491 }}} } } };
+static matrix Lab_viewer_orient = { { { {{{ 0.836404383f, 0.313801885f, -0.449397534f }}},
+										{{{ 0.0485503487f, 0.774259329f, 0.631004393f }}},
+										{{{ 0.545959771f, -0.549592316f, 0.632358491f }}} } } };
 static float Lab_viewer_rotation = 0.0f;
 static int Lab_viewer_flags = LAB_MODE_NONE;
 static vec3d Lab_viewer_position = vmd_zero_vector;
@@ -646,7 +646,7 @@ void labviewer_do_render(float frametime)
 
 	// render our particular thing
 	if (Lab_model_num >= 0) {
-		labviewer_render_model(frametime);
+		labviewer_render_model_new(frametime);
 
 		// print out the current pof filename, to help with... something
 		if ( strlen(Lab_model_filename) ) {
