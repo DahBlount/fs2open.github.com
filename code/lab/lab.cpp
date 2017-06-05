@@ -99,10 +99,10 @@ static vec3d Lab_model_pos = ZERO_VECTOR;
  * This aligns the model so it points to the bottom left corner of the screen, 
  * which is pretty standard across 3D applications. (DahBlount)
  */
-static matrix Lab_model_orient = { { { {{{ 0.836404383f, 0.313801885f, -0.449397534f }}},
-										{{{ 0.0485503487f, 0.774259329f, 0.631004393f }}},
-										{{{ 0.545959771f, -0.549592316f, 0.632358491f }}} } } };
-static float Lab_model_rotation = 0.0f;
+static matrix Lab_viewer_orient = { { { {{{ 0.836404383, 0.313801885, -0.449397534 }}},
+										{{{ 0.0485503487, 0.774259329, 0.631004393 }}},
+										{{{ 0.545959771, -0.549592316, 0.632358491 }}} } } };
+static float Lab_viewer_rotation = 0.0f;
 static int Lab_viewer_flags = LAB_MODE_NONE;
 static vec3d Lab_viewer_position = vmd_zero_vector;
 
@@ -112,7 +112,7 @@ static SCP_vector<model_subsystem> Lab_ship_model_subsys;
 static int Lab_detail_texture_save = 0;
 
 SCP_string Lab_selected_mission = "None";
-matrix Lab_skybox_orientation = vmd_identity_matrix;
+matrix Lab_skybox_orientation;
 
 static int anim_timer_start = 0;
 
@@ -380,7 +380,7 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 
 void light_set_all_relevent();
 
-void labviewer_render_model(float frametime)
+void labviewer_render_model_new(float frametime) 
 {
 	angles rot_angles, view_angles;
 	float rev_rate;
@@ -454,14 +454,6 @@ void labviewer_render_model(float frametime)
 	if (Lab_selected_object != -1) 
 	{
 		object* obj = &Objects[Lab_selected_object];
-
-		Player_obj->radius = 1;
-		Player_obj->pos = Lab_viewer_position;
-		obj->pos = Lab_model_pos;
-		obj->orient = Lab_model_orient;
-
-		//Set lab-specific overrides
-		Motion_debris_override = 1;
 
 		camid cid = game_render_frame_setup();
 
@@ -2169,7 +2161,6 @@ void lab_init()
 }
 
 #include "controlconfig/controlsconfig.h"
-#include "lab.h"
 void lab_do_frame(float frametime)
 {
 	GR_DEBUG_SCOPE("Lab Frame");
