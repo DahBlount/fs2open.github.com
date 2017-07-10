@@ -126,6 +126,11 @@ static int Trackball_active = 0;
 
 SCP_string Lab_team_color = "<none>";
 
+camid Lab_cam;
+float lab_cam_distance = 100.0f;
+float lab_cam_phi = 3.14f / 2;
+float lab_cam_theta = 0;
+
 // functions
 void labviewer_change_ship_lod(Tree *caller);
 void labviewer_change_ship(Tree *caller);
@@ -222,23 +227,25 @@ void rotate_view(int dx, int dy)
 
 	matrix mat1, mat2;
 
-	vm_trackball(-dx, -dy, &mat1);
-	vm_matrix_x_matrix(&mat2, &mat1, &Lab_skybox_orientation);
+	auto cam = Lab_cam.getCamera();
 
-	Lab_skybox_orientation = mat2;
+	vec3d pos = vmd_zero_vector;
 
-	vec3d tmp = vmd_zero_vector;
-	tmp.xyz.z = Objects[Lab_selected_object].radius * 1.7f;
-	vm_vec_rotate(&Lab_viewer_position, &tmp, &mat2);
-	vm_vec_sub(&Lab_viewer_position, &vmd_zero_vector, &Lab_viewer_position);
+	cam->get_info(&pos, nullptr);
 
-	float xzdist = sqrt(Lab_viewer_position.xyz.x * Lab_viewer_position.xyz.x + Lab_viewer_position.xyz.z * Lab_viewer_position.xyz.z);
-	angles tmpang;
-	tmpang.h = atan2(Lab_viewer_position.xyz.x, Lab_viewer_position.xyz.z);
-	tmpang.p = -atan2(Lab_viewer_position.xyz.y, xzdist);
-	tmpang.b = 0.0f;
+	lab_cam_theta += dx / 100.0f;
+	lab_cam_phi += dy / 100.0f;
+	
+	if (lab_cam_phi > PI)
+		lab_cam_phi = 0.0f;
+	if (lab_cam_phi < 0.0f)
+		lab_cam_phi = PI;
 
-	vm_angles_2_matrix(&Player_obj->orient, &tmpang);
+	pos = { { sinf(lab_cam_phi) * cosf(lab_cam_theta), cosf(lab_cam_phi), sinf(lab_cam_phi) * sinf(lab_cam_theta) } };
+	vm_vec_scale(&pos, lab_cam_distance);
+
+	cam->set_position(&pos);
+	cam->set_rotation_facing(&vmd_zero_vector);
 }
 
 void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
@@ -378,7 +385,23 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 
 void light_set_all_relevent();
 
-void labviewer_render_model(float frametime)
+void labviewer_recalc_camera() 
+{
+	auto cam = Lab_cam.getCamera();
+
+	if (Lab_selected_object != -1) {
+
+		object* obj = &Objects[Lab_selected_object];
+
+		vec3d new_position = { {sinf(lab_cam_phi) * cosf(lab_cam_theta), cosf(lab_cam_phi), sinf(lab_cam_phi) * sinf(lab_cam_theta) } };
+		vm_vec_scale(&new_position, lab_cam_distance);
+
+		cam->set_position(&new_position);
+		cam->set_rotation_facing(&Lab_model_pos);
+	}
+}
+
+void labviewer_render_model_new(float frametime) 
 {
 	angles rot_angles, view_angles;
 	float rev_rate;
@@ -413,19 +436,17 @@ void labviewer_render_model(float frametime)
 		mouse_get_delta(&dx, &dy);
 
 		if (dx || dy) {
-			// rotation mode
+			// Rotate the ship
 			if (Trackball_mode == 1) {
 				vm_trackball(-dx, -dy, &mat1);
-				vm_matrix_x_matrix(&mat2, &mat1, &Lab_model_orient);
-				Lab_model_orient = mat2;
-			}
-			// pan mode
-			else if (Trackball_mode == 2) {
-				double scale_x = dx * (double)model_get_radius(Lab_model_num) * 0.005;
-				double scale_y = dy * (double)model_get_radius(Lab_model_num) * 0.005;
+				vm_matrix_x_matrix(&mat2, &mat1, &Objects[Lab_selected_object].orient);
+				
+				Objects[Lab_selected_object].orient = mat2;
 
-				Lab_model_pos.xyz.x -= (float)scale_x;
-				Lab_model_pos.xyz.y += (float)scale_y;
+			}
+			// zoom in/out
+			else if (Trackball_mode == 2) {			
+				lab_cam_distance += dy / 10.0f;
 			}
 			// rotate background
 			else if (Trackball_mode == 3)
@@ -438,6 +459,8 @@ void labviewer_render_model(float frametime)
 
 				Lab_viewer_zoom += scale_y;
 			}
+
+			labviewer_recalc_camera();
 		}
 	}
 	// otherwise do orient/rotation calculation, if we are supposed to
@@ -446,7 +469,7 @@ void labviewer_render_model(float frametime)
 		rot_angles.p = 0.0f;
 		rot_angles.b = 0.0f;
 		rot_angles.h = PI2 * frametime / rev_rate;
-		vm_rotate_matrix_by_angles(&Lab_model_orient, &rot_angles);
+		vm_rotate_matrix_by_angles(&Lab_viewer_orient, &rot_angles);
 	}
 
 	if (Lab_selected_object != -1) 
@@ -462,17 +485,13 @@ void labviewer_render_model(float frametime)
 		auto basemap_override = Basemap_color_override_set;
 		auto glowmap_override = Glowmap_color_override_set;
 
-		Player_obj->radius = 1;
-		Player_obj->pos = Lab_viewer_position;
-		obj->pos = Lab_model_pos;
-		obj->orient = Lab_model_orient;
+		if (Lab_model_flags & MR_NO_LIGHTING)
+			Ship_info[Ships[obj->instance].ship_info_index].flags.toggle(Ship::Info_Flags::No_lighting);
 
-		//Set lab-specific overrides
-		Motion_debris_override = 1;
+		game_render_frame(Lab_cam);
 
-		camid cid = game_render_frame_setup();
-
-		game_render_frame(cid);
+		if (Lab_model_flags & MR_NO_LIGHTING)
+			Ship_info[Ships[obj->instance].ship_info_index].flags.toggle(Ship::Info_Flags::No_lighting);
 
 		Motion_debris_override = 0;
 	}
@@ -510,8 +529,8 @@ void labviewer_render_bitmap(float frametime)
 			// rotation mode
 			if (Trackball_mode == 1) {
 				vm_trackball(-dx, -dy, &mat1);
-				vm_matrix_x_matrix(&mat2, &mat1, &Lab_model_orient);
-				Lab_model_orient = mat2;
+				vm_matrix_x_matrix(&mat2, &mat1, &Lab_viewer_orient);
+				Lab_viewer_orient = mat2;
 			}
 			// pan mode
 			else if (Trackball_mode == 2) {
@@ -541,12 +560,12 @@ void labviewer_render_bitmap(float frametime)
 		view_angles.p = -0.6f;
 		view_angles.b = 0.0f;
 		view_angles.h = 0.0f;
-		vm_angles_2_matrix(&Lab_model_orient, &view_angles);
+		vm_angles_2_matrix(&Lab_viewer_orient, &view_angles);
 
 		rot_angles.p = 0.0f;
 		rot_angles.b = 0.0f;
 		rot_angles.h = Lab_model_rotation;
-		vm_rotate_matrix_by_angles(&Lab_model_orient, &rot_angles);
+		vm_rotate_matrix_by_angles(&Lab_viewer_orient, &rot_angles);
 	}
 
 	g3_start_frame(1);
@@ -571,7 +590,7 @@ void labviewer_render_bitmap(float frametime)
 	}
 
 	vec3d headp;
-	vm_vec_scale_add(&headp, &vmd_zero_vector, &Lab_model_orient.vec.fvec, wip->laser_length);
+	vm_vec_scale_add(&headp, &vmd_zero_vector, &Lab_viewer_orient.vec.fvec, wip->laser_length);
 
 	//gr_set_bitmap(wip->laser_bitmap.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 	if(wip->laser_length > 0.0001f) {
@@ -604,8 +623,8 @@ void labviewer_render_bitmap(float frametime)
 								(int)((float)wip->laser_color_1.blue + (((float)wip->laser_color_2.blue - (float)wip->laser_color_1.blue) * pct)) );
 		}
 
-		vm_vec_scale_add(&headp2, &vmd_zero_vector, &Lab_model_orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
-		vm_vec_scale_add(&tailp, &vmd_zero_vector, &Lab_model_orient.vec.fvec, wip->laser_length * (1 -  weapon_glow_scale_l) );
+		vm_vec_scale_add(&headp2, &vmd_zero_vector, &Lab_viewer_orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
+		vm_vec_scale_add(&tailp, &vmd_zero_vector, &Lab_viewer_orient.vec.fvec, wip->laser_length * (1 -  weapon_glow_scale_l) );
 
 		framenum = 0;
 
@@ -1630,7 +1649,7 @@ void labviewer_make_ship_window(Button *caller)
 void labviewer_change_ship_lod(Tree* caller)
 {
 	int ship_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
-	Assert( ship_index >= 0 );
+	Assert(ship_index >= 0);
 
 	if (Lab_selected_object == -1)
 	{
@@ -1649,8 +1668,9 @@ void labviewer_change_ship_lod(Tree* caller)
 	{
 		obj_delete(Lab_selected_object);
 	}
-	
+
 	Lab_selected_object = ship_create(&vmd_identity_matrix, &Lab_model_pos, ship_index);
+	lab_cam_distance = Objects[Lab_selected_object].radius * 2.5f;
 
 	Lab_last_selected_ship = Lab_selected_index;
 
@@ -1665,6 +1685,7 @@ void labviewer_change_ship_lod(Tree* caller)
 	labviewer_update_desc_window();
 	labviewer_update_flags_window();
 	labviewer_update_variables_window();
+	labviewer_recalc_camera();
 }
 
 void labviewer_change_ship(Tree *caller)
@@ -2118,8 +2139,9 @@ void lab_init()
 	x = 0;
 	cbp = Lab_toolbar->AddChild(new Button("Ships", x, 0, labviewer_make_ship_window));
 
-	x += cbp->GetWidth() + 10;
-	cbp = Lab_toolbar->AddChild(new Button("Weapons", x, 0, labviewer_make_weap_window));
+	// Weapon renderer disabled for now
+	//x += cbp->GetWidth() + 10;
+	//cbp = Lab_toolbar->AddChild(new Button("Weapons", x, 0, labviewer_make_weap_window));
 
 	if ( !Lab_in_mission ) {
 		x += cbp->GetWidth() + 10;
@@ -2173,6 +2195,9 @@ void lab_init()
 	Viewer_obj = Player_obj;
 
 	Viewer_mode = VM_EXTERNAL;
+
+	if (!Lab_cam.isValid())
+		Lab_cam = cam_create("Lab camera");
 }
 
 #include "controlconfig/controlsconfig.h"
@@ -2206,14 +2231,14 @@ void lab_do_frame(float frametime)
 			Trackball_mode = 4;
 		} else if (status & GST_MOUSE_LEFT_BUTTON) {
 			Trackball_active = 1;
-			Trackball_mode = 1;	// rotate
+			Trackball_mode = 1;	// rotate viewed object
 
 			if ( key_get_shift_status() & KEY_SHIFTED ) {
-				Trackball_mode = 2;	// pan
+				Trackball_mode = 2;	// zoom
 			}
 		} else if (status & GST_MOUSE_RIGHT_BUTTON) {
 			Trackball_active = 1;
-			Trackball_mode = 3;	// Zoom
+			Trackball_mode = 3;	// rotate camera
 		} else if ( !mouse_down(MOUSE_LEFT_BUTTON | MOUSE_RIGHT_BUTTON) ) {
 			// reset trackball modes
 			Trackball_active = 0;
@@ -2427,4 +2452,6 @@ void lab_close()
 	weapon_unpause_sounds();
 	//audiostream_unpause_all();
 	game_flush();
+
+	cam_delete(Lab_cam);
 }
