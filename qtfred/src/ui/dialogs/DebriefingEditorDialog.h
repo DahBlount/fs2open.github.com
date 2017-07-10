@@ -2,6 +2,11 @@
 #define DEBRIEFINGEDITORDIALOG_H
 
 #include <QDialog>
+#include <QCloseEvent>
+
+#include <ui/FredView.h>
+
+#include <mission\dialogs\DebriefingEditorDialogModel.h>
 
 namespace fso {
 namespace fred {
@@ -16,8 +21,11 @@ class DebriefingEditorDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit DebriefingEditorDialog(QWidget *parent = 0);
+    explicit DebriefingEditorDialog(FredView* parent, EditorViewport* viewport);
     ~DebriefingEditorDialog();
+
+protected:
+	void closeEvent(QCloseEvent*) override;
 
 private slots:
     void on_actionTeam_1_triggered();
@@ -27,7 +35,9 @@ private slots:
     void on_actionBalance_Teams_triggered();
 
 private:
-    Ui::DebriefingEditorDialog *ui;
+	std::unique_ptr<Ui::DebriefingEditorDialog> ui;
+	std::unique_ptr<DebriefingEditorDialogModel> _model;
+	EditorViewport* _viewport;
 };
 
 }
