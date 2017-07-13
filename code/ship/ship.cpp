@@ -8874,7 +8874,7 @@ void ship_process_post(object * obj, float frametime)
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)) {
 		// Plot ship on the radar.  What about multiplayer ships?
-		if ( obj != Player_obj )			// don't plot myself.
+		if ( obj != Player_obj && Game_mode & GM_IN_MISSION)			// don't plot myself.
 			radar_plot_object( obj );
 
 		// MWA -- move the spark code to before the check for multiplayer master
@@ -18793,13 +18793,13 @@ void ship_render(object* obj, model_draw_list* scene)
 	bool show_thrusters = (!shipp->flags[Ship_Flags::No_thrusters]) && !Rendering_to_shadow_map;
 	dock_function_info dfi;
 
-	MONITOR_INC( NumShipsRend, 1 );
+	MONITOR_INC(NumShipsRend, 1);
 
 	// look for a warping ship, whether for me or for anybody I'm docked with
 	dock_evaluate_all_docked_objects(obj, &dfi, ship_find_warping_ship_helper);
 
 	// if any docked objects are set to stage 1 arrival then set bool
-	if ( dfi.maintained_variables.bool_value ) {
+	if (dfi.maintained_variables.bool_value) {
 		warp_shipp = &Ships[dfi.maintained_variables.objp_value->instance];
 
 		is_first_stage_arrival = warp_shipp->flags[Ship_Flags::Arriving_stage_1];
@@ -18807,27 +18807,28 @@ void ship_render(object* obj, model_draw_list* scene)
 		// This is a hack to make ships using the hyperspace warpin type to
 		// render even in stage 1, which is used for collision detection
 		// purposes -zookeeper
-		if ( Ship_info[warp_shipp->ship_info_index].warpin_type == WT_HYPERSPACE ) {
+		if (Ship_info[warp_shipp->ship_info_index].warpin_type == WT_HYPERSPACE) {
 			warp_shipp = NULL;
 			is_first_stage_arrival = false;
 		}
 	}
 
-	if ( is_first_stage_arrival ) {
+	if (is_first_stage_arrival) {
 		//WMC - Draw animated warp effect (ie BSG thingy)
 		//WMC - based on Bobb's secondary thruster stuff
 		//which was in turn based on the beam code.
 		//I'm gonna need some serious acid to neutralize this base.
-		if(shipp->is_arriving()) {
+		if (shipp->is_arriving()) {
 			shipp->warpin_effect->warpShipRender();
-		} else if(shipp->flags[Ship_Flags::Depart_warp]) {
+		}
+		else if (shipp->flags[Ship_Flags::Depart_warp]) {
 			shipp->warpout_effect->warpShipRender();
 		}
 
 		return;
 	}
 
-	if ( obj == Viewer_obj && !Rendering_to_shadow_map ) {
+	if (obj == Viewer_obj && !Rendering_to_shadow_map) {
 		if (!(Viewer_mode & VM_TOPDOWN))
 		{
 			return;
@@ -18837,9 +18838,9 @@ void ship_render(object* obj, model_draw_list* scene)
 	model_clear_instance(sip->model_num);
 
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
-	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
-		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
-			if ( timestamp_valid(shipp->arc_timestamp[i]) ) {
+	if (vm_vec_dist_quick(&obj->pos, &Eye_position) < obj->radius*50.0f && !Rendering_to_shadow_map) {
+		for (int i = 0; i < MAX_SHIP_ARCS; i++) {
+			if (timestamp_valid(shipp->arc_timestamp[i])) {
 				model_add_arc(sip->model_num, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
 			}
 		}
@@ -18847,27 +18848,28 @@ void ship_render(object* obj, model_draw_list* scene)
 
 	uint render_flags = MR_NORMAL;
 
-	if ( shipp->large_ship_blowup_index >= 0 )	{
+	if (shipp->large_ship_blowup_index >= 0) {
 		shipfx_large_blowup_queue_render(scene, shipp);
 
 		//WMC - Draw animated warp effect (ie BSG thingy)
 		//WMC - based on Bobb's secondary thruster stuff
 		//which was in turn based on the beam code.
 		//I'm gonna need some serious acid to neutralize this base.
-		if(shipp->is_arriving()) {
+		if (shipp->is_arriving()) {
 			shipp->warpin_effect->warpShipRender();
-		} else if(shipp->flags[Ship_Flags::Depart_warp]) {
+		}
+		else if (shipp->flags[Ship_Flags::Depart_warp]) {
 			shipp->warpout_effect->warpShipRender();
 		}
 
 		return;
 	}
-		
+
 	ship_render_batch_thrusters(obj);
 
 	model_render_params render_info;
-	
-	if ( !(shipp->flags[Ship_Flags::Disabled]) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters) {
+
+	if (!(shipp->flags[Ship_Flags::Disabled]) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters) {
 		mst_info mst;
 
 		ship_set_thruster_info(&mst, obj, shipp, sip);
@@ -18879,10 +18881,11 @@ void ship_render(object* obj, model_draw_list* scene)
 
 	// Warp_shipp points to the ship that is going through a
 	// warp... either this ship or the ship it is docked with.
-	if ( warp_shipp != NULL ) {
-		if ( warp_shipp->is_arriving() ) {
+	if (warp_shipp != NULL) {
+		if (warp_shipp->is_arriving()) {
 			warp_shipp->warpin_effect->warpShipClip(&render_info);
-		} else if ( warp_shipp->flags[Ship_Flags::Depart_warp] ) {
+		}
+		else if (warp_shipp->flags[Ship_Flags::Depart_warp]) {
 			warp_shipp->warpout_effect->warpShipClip(&render_info);
 		}
 	}
@@ -18893,21 +18896,21 @@ void ship_render(object* obj, model_draw_list* scene)
 	// Valathil - maybe do a scripting hook here to do some scriptable effects?
 	ship_render_set_animated_effect(&render_info, shipp, &render_flags);
 
-	if ( sip->uses_team_colors ) {
+	if (sip->uses_team_colors) {
 		team_color model_team_color;
 
 		bool team_color_set = model_get_team_color(&model_team_color, shipp->team_name, shipp->secondary_team_name, shipp->team_change_timestamp, shipp->team_change_time);
 
-		if ( team_color_set ) {
+		if (team_color_set) {
 			render_info.set_team_color(model_team_color);
 		}
 	}
 
-	if ( sip->flags[Ship::Info_Flags::No_lighting] ) {
+	if (sip->flags[Ship::Info_Flags::No_lighting]) {
 		render_flags |= MR_NO_LIGHTING;
 	}
 
-	if ( Rendering_to_shadow_map ) {
+	if (Rendering_to_shadow_map) {
 		render_flags = MR_NO_TEXTURING | MR_NO_LIGHTING;
 	}
 
@@ -18915,7 +18918,59 @@ void ship_render(object* obj, model_draw_list* scene)
 		render_flags |= MR_NO_GLOWMAPS;
 	}
 
+	if (shipp->flags[Ship_Flags::Draw_as_wireframe]) {
+		render_flags |= MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING;
+		render_info.set_color(Wireframe_color);
+	}
+
+	if (shipp->flags[Ship_Flags::Render_full_detail]) {
+		render_flags |= MR_FULL_DETAIL;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_light]) {
+		render_flags |= MR_NO_LIGHTING;
+	}
+
+	uint debug_flags = render_info.get_debug_flags();
+
+	if (shipp->flags[Ship_Flags::Render_without_diffuse]) {
+		debug_flags |= MR_DEBUG_NO_DIFFUSE;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_envmap]) {
+		debug_flags |= MR_DEBUG_NO_ENV;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_normalmap]) {
+		debug_flags |= MR_DEBUG_NO_NORMAL;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_specmap]) {
+		debug_flags |= MR_DEBUG_NO_SPEC;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_show_pivots]) {
+		debug_flags |= MR_DEBUG_PIVOTS;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_show_paths]) {
+		debug_flags |= MR_DEBUG_PATHS;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_show_dockpaths]) {
+		debug_flags |= MR_DEBUG_BAY_PATHS;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_show_radius]) {
+		debug_flags |= MR_DEBUG_RADIUS;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_show_shields]) {
+		debug_flags |= MR_DEBUG_SHIELDS;
+	}
+
 	render_info.set_flags(render_flags);
+	render_info.set_debug_flags(debug_flags);
 
 	//draw weapon models
 	ship_render_weapon_models(&render_info, scene, obj, render_flags);

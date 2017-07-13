@@ -128,8 +128,17 @@ SCP_string Lab_team_color = "<none>";
 
 camid Lab_cam;
 float lab_cam_distance = 100.0f;
-float lab_cam_phi = 3.14f / 2;
-float lab_cam_theta = 0;
+float lab_cam_phi = 0.74f; // Values chosen to approximate the initial rotation used previously
+float lab_cam_theta = 2.7f;
+bool Lab_render_wireframe = false; 
+bool Lab_render_without_light = false;
+bool Lab_render_show_thrusters = false;
+bool Lab_render_show_detail = false;
+bool Lab_render_show_pivots = false;
+bool Lab_render_show_paths = false;
+bool Lab_render_show_dockpaths = false;
+bool Lab_render_show_radius = false;
+bool Lab_render_show_shields = false;
 
 // functions
 void labviewer_change_ship_lod(Tree *caller);
@@ -225,8 +234,6 @@ void rotate_view(int dx, int dy)
 {
 	if (dx == 0 && dy == 0) return;
 
-	matrix mat1, mat2;
-
 	auto cam = Lab_cam.getCamera();
 
 	vec3d pos = vmd_zero_vector;
@@ -240,12 +247,6 @@ void rotate_view(int dx, int dy)
 		lab_cam_phi = 0.0f;
 	if (lab_cam_phi < 0.0f)
 		lab_cam_phi = PI;
-
-	pos = { { sinf(lab_cam_phi) * cosf(lab_cam_theta), cosf(lab_cam_phi), sinf(lab_cam_phi) * sinf(lab_cam_theta) } };
-	vm_vec_scale(&pos, lab_cam_distance);
-
-	cam->set_position(&pos);
-	cam->set_rotation_facing(&vmd_zero_vector);
 }
 
 void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
@@ -390,9 +391,6 @@ void labviewer_recalc_camera()
 	auto cam = Lab_cam.getCamera();
 
 	if (Lab_selected_object != -1) {
-
-		object* obj = &Objects[Lab_selected_object];
-
 		vec3d new_position = { {sinf(lab_cam_phi) * cosf(lab_cam_theta), cosf(lab_cam_phi), sinf(lab_cam_phi) * sinf(lab_cam_theta) } };
 		vm_vec_scale(&new_position, lab_cam_distance);
 
@@ -403,7 +401,7 @@ void labviewer_recalc_camera()
 
 void labviewer_render_model_new(float frametime) 
 {
-	angles rot_angles, view_angles;
+	angles rot_angles;
 	float rev_rate;
 
 	ship_info *sip = NULL;
@@ -437,7 +435,8 @@ void labviewer_render_model_new(float frametime)
 
 		if (dx || dy) {
 			// Rotate the ship
-			if (Trackball_mode == 1) {
+			if (Trackball_mode == 1) 
+			{
 				vm_trackball(-dx, -dy, &mat1);
 				vm_matrix_x_matrix(&mat2, &mat1, &Objects[Lab_selected_object].orient);
 				
@@ -445,19 +444,16 @@ void labviewer_render_model_new(float frametime)
 
 			}
 			// zoom in/out
-			else if (Trackball_mode == 2) {			
-				lab_cam_distance += dy / 10.0f;
+			else if (Trackball_mode == 2) 
+			{			
+				lab_cam_distance *= 1.0f + (dy / 20.0f);
+				if (lab_cam_distance < 1.0f)
+					lab_cam_distance = 1.0f;
 			}
 			// rotate background
 			else if (Trackball_mode == 3)
 			{
 				rotate_view(dx, dy);
-			}
-			else if (dy && Trackball_mode == 4)
-			{
-				float scale_y = dy * 0.01f;
-
-				Lab_viewer_zoom += scale_y;
 			}
 
 			labviewer_recalc_camera();
@@ -469,7 +465,7 @@ void labviewer_render_model_new(float frametime)
 		rot_angles.p = 0.0f;
 		rot_angles.b = 0.0f;
 		rot_angles.h = PI2 * frametime / rev_rate;
-		vm_rotate_matrix_by_angles(&Lab_viewer_orient, &rot_angles);
+		vm_rotate_matrix_by_angles(&Objects[Lab_selected_object].orient, &rot_angles);
 	}
 
 	if (Lab_selected_object != -1) 
@@ -485,18 +481,46 @@ void labviewer_render_model_new(float frametime)
 		auto basemap_override = Basemap_color_override_set;
 		auto glowmap_override = Glowmap_color_override_set;
 
-		if (Lab_model_flags & MR_NO_LIGHTING)
-			Ship_info[Ships[obj->instance].ship_info_index].flags.toggle(Ship::Info_Flags::No_lighting);
+		ship_process_post(obj, frametime);
+
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, Lab_render_wireframe);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_dockpaths, Lab_render_show_dockpaths);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_paths, Lab_render_show_paths);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_pivots, Lab_render_show_pivots);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_radius, Lab_render_show_radius);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_shields, Lab_render_show_shields);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, Lab_render_show_detail);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, Lab_render_without_light);
+
+		if (Lab_render_wireframe)
+			model_render_set_wireframe_color(&Color_white);
+
+		if (Lab_render_show_thrusters) {
+			obj->phys_info.forward_thrust = 1.0f;
+			Ships[obj->instance].flags.remove(Ship::Ship_Flags::No_thrusters);
+
+			if (Lab_thrust_afterburn)
+				obj->phys_info.flags |= PF_AFTERBURNER_ON;
+			else
+				obj->phys_info.flags &= ~PF_AFTERBURNER_ON;
+		}
+		else {
+			obj->phys_info.forward_thrust = 0.0f;
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::No_thrusters);
+		}
+
+		/*Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_diffuse, Basemap_override);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_envmap, Envmap_override);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, Normalmap_override);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, Specmap_override);*/
 
 		game_render_frame(Lab_cam);
-
-		if (Lab_model_flags & MR_NO_LIGHTING)
-			Ship_info[Ships[obj->instance].ship_info_index].flags.toggle(Ship::Info_Flags::No_lighting);
 
 		Motion_debris_override = 0;
 	}
 }
 
+/*
 void labviewer_render_bitmap(float frametime)
 {
 	static float current_frame = 0.0f;
@@ -663,6 +687,7 @@ void labviewer_render_bitmap(float frametime)
 
 	g3_end_frame();
 }
+*/
 
 void labviewer_do_render(float frametime)
 {
@@ -688,7 +713,9 @@ void labviewer_do_render(float frametime)
 			gr_set_color_fast(&Color_white);
 			gr_string(gr_screen.center_offset_x + gr_screen.center_w - w, gr_screen.center_offset_y + gr_screen.center_h - h, Lab_model_filename, GR_RESIZE_NONE);
 		}
-	} else if (Lab_bitmap_id >= 0) {
+	} 
+	/*
+	else if (Lab_bitmap_id >= 0) {
 		GR_DEBUG_SCOPE("Lab Render bitmap");
 
 		gr_scene_texture_begin();
@@ -704,6 +731,7 @@ void labviewer_do_render(float frametime)
 			gr_string(gr_screen.center_offset_x + gr_screen.center_w - w, gr_screen.center_offset_y + gr_screen.center_h - h, Lab_bitmap_filename, GR_RESIZE_NONE);
 		}
 	}
+	*/
 
 	// print FPS at bottom left, might be helpful
 	extern void game_get_framerate();
@@ -1280,7 +1308,6 @@ void labviewer_make_render_options_window(Button *caller)
 
 	if (Cmdline_postprocess) {
 		ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
-		ADD_RENDER_BOOL("Use FXAA", Cmdline_fxaa);
 	}
 
 	// map related flags
@@ -1303,19 +1330,17 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_BOOL("No Team Colors", Teamcolor_override);
 	ADD_RENDER_BOOL("No Glow Points", Glowpoint_override);
 	// model flags
-	ADD_RENDER_FLAG("Wireframe", Lab_model_flags, MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING);
-	ADD_RENDER_FLAG("Transparent", Lab_model_flags, MR_ALL_XPARENT);
-	ADD_RENDER_FLAG("No Lighting", Lab_model_flags, MR_NO_LIGHTING);
-	ADD_RENDER_FLAG("No Z-Buffer", Lab_model_flags, MR_NO_ZBUFFER);
-	ADD_RENDER_FLAG("No Culling", Lab_model_flags, MR_NO_CULL);
-	ADD_RENDER_FLAG("Force Clamp", Lab_model_flags, MR_FORCE_CLAMP);
-	ADD_RENDER_FLAG("Show Full Detail", Lab_model_flags, MR_FULL_DETAIL);
-	ADD_RENDER_FLAG("Show Pivots", Lab_model_debug_flags, MR_DEBUG_PIVOTS);
-	ADD_RENDER_FLAG("Show Paths", Lab_model_debug_flags, MR_DEBUG_PATHS);
-	ADD_RENDER_FLAG("Show Bay Paths", Lab_model_debug_flags, MR_DEBUG_BAY_PATHS);
-	ADD_RENDER_FLAG("Show Radius", Lab_model_debug_flags, MR_DEBUG_RADIUS);
-	ADD_RENDER_FLAG("Show Shields", Lab_model_debug_flags, MR_DEBUG_SHIELDS);
-	ADD_RENDER_FLAG("Show Thrusters", Lab_model_flags, MR_SHOW_THRUSTERS);
+	ADD_RENDER_BOOL("Wireframe", Lab_render_wireframe);
+	//ADD_RENDER_FLAG("No Z-Buffer", Lab_model_flags, MR_NO_ZBUFFER);
+	//ADD_RENDER_FLAG("Transparent", Lab_model_flags, MR_ALL_XPARENT);
+	ADD_RENDER_BOOL("No Lighting", Lab_render_without_light);
+	ADD_RENDER_BOOL("Show Full Detail", Lab_render_show_detail);
+	ADD_RENDER_BOOL("Show Pivots", Lab_render_show_pivots);
+	ADD_RENDER_BOOL("Show Paths", Lab_render_show_paths);
+	ADD_RENDER_BOOL("Show Bay Paths", Lab_render_show_dockpaths);
+	ADD_RENDER_BOOL("Show Radius", Lab_render_show_radius);
+	ADD_RENDER_BOOL("Show Shields", Lab_render_show_shields);
+	ADD_RENDER_BOOL("Show Thrusters", Lab_render_show_thrusters);
 	ADD_RENDER_FLAG("Show Ship Weapons", Lab_viewer_flags, LAB_FLAG_SHOW_WEAPONS);
 	ADD_RENDER_FLAG("Initial Rotation", Lab_viewer_flags, LAB_FLAG_INITIAL_ROTATION);
 	ADD_RENDER_FLAG("Show Destroyed Subsystems", Lab_viewer_flags, LAB_FLAG_DESTROYED_SUBSYSTEMS);
@@ -1670,6 +1695,7 @@ void labviewer_change_ship_lod(Tree* caller)
 	}
 
 	Lab_selected_object = ship_create(&vmd_identity_matrix, &Lab_model_pos, ship_index);
+	Objects[Lab_selected_object].flags.set(Object::Object_Flags::Player_ship);
 	lab_cam_distance = Objects[Lab_selected_object].radius * 2.5f;
 
 	Lab_last_selected_ship = Lab_selected_index;
@@ -2228,7 +2254,7 @@ void lab_do_frame(float frametime)
 		if (mouse_down(MOUSE_LEFT_BUTTON) && mouse_down(MOUSE_RIGHT_BUTTON)) 
 		{
 			Trackball_active = 1;
-			Trackball_mode = 4;
+			Trackball_mode = 4; // Currently unused
 		} else if (status & GST_MOUSE_LEFT_BUTTON) {
 			Trackball_active = 1;
 			Trackball_mode = 1;	// rotate viewed object
