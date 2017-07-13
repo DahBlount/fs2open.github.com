@@ -1109,12 +1109,15 @@
     <string>&amp;Debriefing</string>
    </property>
    <property name="shortcut">
-    <string/>
+    <string>Shift+D</string>
    </property>
   </action>
   <action name="actionCommand_Briefing">
    <property name="text">
     <string>&amp;Command Briefing</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+C</string>
    </property>
   </action>
   <action name="actionFiction_Viewer">

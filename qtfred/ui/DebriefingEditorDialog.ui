@@ -434,7 +434,6 @@
    </property>
   </action>
   <zorder>menuBar</zorder>
-  <zorder></zorder>
  </widget>
  <resources/>
  <connections/>

@@ -17,6 +17,7 @@
 #include <ui/dialogs/WaypointEditorDialog.h>
 #include <ui/dialogs/ObjectOrientEditorDialog.h>
 #include <ui/dialogs/MissionSpecDialog.h>
+#include <ui/dialogs/CommandBriefingDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
 #include <ui/dialogs/AboutDialog.h>
 #include <globalincs/linklist.h>
@@ -662,6 +663,10 @@ void FredView::on_actionBriefing_triggered(bool) {
 void FredView::on_actionMission_Specs_triggered(bool) {
 	auto missionSpecEditor = new dialogs::MissionSpecDialog(this, _viewport);
 	missionSpecEditor->show();
+}
+void FredView::on_actionCommand_Briefing_triggered(bool) {
+	auto cmdBriefEditor = new dialogs::CommandBriefingDialog(this, _viewport);
+	cmdBriefEditor->show();
 }
 void FredView::on_actionWaypoint_Paths_triggered(bool) {
 	auto editorDialog = new dialogs::WaypointEditorDialog(this, _viewport);

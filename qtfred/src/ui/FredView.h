@@ -81,6 +81,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionEvents_triggered(bool);
 	void on_actionBriefing_triggered(bool);
 	void on_actionMission_Specs_triggered(bool);
+	void on_actionCommand_Briefing_triggered(bool);
 	void on_actionWaypoint_Paths_triggered(bool);
 	void on_actionObjects_triggered(bool);
 
