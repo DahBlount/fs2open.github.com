@@ -470,6 +470,10 @@ void labviewer_render_model_new(float frametime)
 
 	if (Lab_selected_object != -1) 
 	{
+		bool lab_render_light_save = Lab_render_without_light;
+		if (Lab_selected_mission.compare("None") == 0)
+			Lab_render_without_light = true;
+
 		object* obj = &Objects[Lab_selected_object];
 		
 		Player_obj->radius = obj->radius / 10;
@@ -516,7 +520,7 @@ void labviewer_render_model_new(float frametime)
 
 		game_render_frame(Lab_cam);
 
-		Motion_debris_override = 0;
+		Lab_render_without_light = lab_render_light_save;
 	}
 }
 
@@ -1925,13 +1929,15 @@ SCP_string get_directory_or_vp(char* path)
 
 void labviewer_change_background(Tree* caller) 
 {
+	matrix skybox_orientation;
+
 	Lab_selected_mission = caller->GetSelectedItem()->Name;
 
 	stars_pre_level_init(true);
 	light_reset();
-	vm_set_identity(&Lab_skybox_orientation);
+	vm_set_identity(&skybox_orientation);
 
-	if (Lab_selected_mission.compare("None")) 
+	if (Lab_selected_mission.compare("None") != 0) 
 	{
 		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();
@@ -1951,7 +1957,7 @@ void labviewer_change_background(Tree* caller)
 
 			if (optional_string("+Skybox Orientation:"))
 			{
-				stuff_matrix(&Lab_skybox_orientation);
+				stuff_matrix(&skybox_orientation);
 			}
 
 			if (optional_string("+Skybox Flags:")) {
@@ -1963,6 +1969,7 @@ void labviewer_change_background(Tree* caller)
 			}
 
 			stars_set_background_model(skybox_model, NULL, skybox_flags);
+			stars_set_background_orientation(&skybox_orientation);
 
 			skip_to_start_of_string("#Background bitmaps");
 		}
