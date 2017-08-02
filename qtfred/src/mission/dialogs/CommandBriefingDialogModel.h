@@ -17,6 +17,11 @@ public:
 private:
 	void initializeData();
 
+	SCP_string m_ani_filename;
+	SCP_string m_text;
+	SCP_string m_stage_title;
+	SCP_string m_wave_filename;
+
 	template<typename T>
 	void modify(T &a, T &b);
 };
