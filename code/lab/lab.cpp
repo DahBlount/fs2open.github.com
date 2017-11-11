@@ -2080,6 +2080,9 @@ void labviewer_change_background(Tree* caller)
 				}
 			}
 
+			// (DahBlount) - Remember to load the debris anims
+			stars_load_debris(flags[Mission::Mission_Flags::Fullneb]);
+
 			Num_backgrounds = 0;
 			extern void parse_one_background(background_t* background);
 			while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
@@ -2101,6 +2104,9 @@ void labviewer_change_background(Tree* caller)
 				stuff_string(envmap_name, F_NAME, MAX_FILENAME_LEN);
 			}
 		}
+	} else {
+		// (DahBlount) - This spot should be used to disable rendering features that only apply to missions.
+		Motion_debris_override = true;
 	}
 }
 
