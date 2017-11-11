@@ -33,6 +33,7 @@
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
 #include "nebula/neb.h"
+#include "model/modelrender.h"
 
 // flags
 #define LAB_FLAG_NORMAL				(0)		// default
@@ -457,6 +458,8 @@ void labviewer_render_model_new(float frametime)
 			}
 
 			labviewer_recalc_camera();
+
+			labviewer_recalc_camera();
 		}
 	}
 	// otherwise do orient/rotation calculation, if we are supposed to
@@ -468,19 +471,18 @@ void labviewer_render_model_new(float frametime)
 		vm_rotate_matrix_by_angles(&Objects[Lab_selected_object].orient, &rot_angles);
 	}
 
-	if (Lab_selected_object != -1) 
+	if (Lab_selected_object != -1)
 	{
 		bool lab_render_light_save = Lab_render_without_light;
 		if (Lab_selected_mission.compare("None") == 0)
 			Lab_render_without_light = true;
 
 		object* obj = &Objects[Lab_selected_object];
-		
+
 		Player_obj->radius = obj->radius / 10;
-		obj->pos = Lab_viewer_pos;
-		obj->orient =  Lab_viewer_orient;
-	else 
-	{
+		obj->pos = Lab_model_pos;
+		obj->orient = Lab_model_orient;
+
 		auto specmap_override = Specmap_color_override_set;
 		auto basemap_override = Basemap_color_override_set;
 		auto glowmap_override = Glowmap_color_override_set;
@@ -790,7 +792,7 @@ void labviewer_close_class_window(GUIObject *caller)
 
 	// reset any existing model/bitmap that is showing
 	labviewer_change_model(NULL);
-	labviewer_change_bitmap();
+	labviewer_change_bitmap(-1, -1);
 }
 
 void labviewer_set_class_window(int mode)
@@ -817,7 +819,7 @@ void labviewer_set_class_window(int mode)
 
 	// reset any existing model/bitmap that is showing
 	labviewer_change_model(NULL);
-	labviewer_change_bitmap();
+	labviewer_change_bitmap(-1, -1);
 }
 
 
@@ -1689,7 +1691,7 @@ void labviewer_change_ship_lod(Tree* caller)
 
 		// reset any existing model/bitmap that is showing
 		labviewer_change_model(NULL);
-		labviewer_change_bitmap();
+		labviewer_change_bitmap(-1, -1);
 
 		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 	}
@@ -1728,6 +1730,8 @@ void labviewer_change_ship(Tree *caller)
 
 	Lab_selected_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());	
 
+	Lab_selected_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());	
+
 	labviewer_update_desc_window();
 	labviewer_update_flags_window();
 	labviewer_update_variables_window();
@@ -1759,7 +1763,7 @@ void labviewer_change_weapon(Tree *caller)
 	if ( !(Weapon_info[weap_index].wi_flags[Weapon::Info_Flags::Beam]) ) {
 		switch (Weapon_info[weap_index].render_type) {
 			case WRT_POF:
-				labviewer_change_bitmap();
+				labviewer_change_bitmap(-1, -1);
 				labviewer_change_model(Weapon_info[weap_index].pofbitmap_name, 0, weap_index);
 				weapon_load_bitmaps(weap_index);
 				break;
@@ -1771,7 +1775,7 @@ void labviewer_change_weapon(Tree *caller)
 
 			default:
 				labviewer_change_model(NULL);
-				labviewer_change_bitmap();
+				labviewer_change_bitmap(-1, -1);
 				break;
 		}
 	}
