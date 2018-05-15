@@ -10897,8 +10897,27 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			}
 			ship_stop_fire_primary_bank(obj, bank_to_fire);
 			continue;
-		}		
-		
+		}
+
+		// Let's setup a fast failure check with a uniform distribution.
+		if (winfo_p->failure_rate > 0.0f) {
+			std::random_device rd;
+			std::mt19937 f(rd());
+			std::uniform_real_distribution<float> gen(0.0f, 1.0f);
+			float test = gen(f);
+			if (test < winfo_p->failure_rate) {
+				if (winfo_p->failure_sub != -1) {
+					weapon_idx = winfo_p->failure_sub;
+					winfo_p = &Weapon_info[weapon_idx];
+				} else {
+					if (obj == Player_obj) {
+						ship_maybe_play_primary_fail_sound();
+					}
+					ship_stop_fire_primary_bank(obj, bank_to_fire);
+					continue;
+				}
+			}
+		}
 
 		if ( pm->n_guns > 0 ) {
 			int num_slots = pm->gun_banks[bank_to_fire].num_slots;

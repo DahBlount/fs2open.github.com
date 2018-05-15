@@ -2740,6 +2740,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (wip->burst_delay >= wip->fire_wait)
 		wip->burst_shots = 0;
 
+	// Set up weapon failure
+	if (optional_string("$Failure Rate:")) {
+		stuff_float(&wip->failure_rate);
+		char subname[NAME_LENGTH];
+		if (optional_string("+Failure Substitute:")) {
+			stuff_string(subname, F_NAME, NAME_LENGTH);
+			strcpy_s(wip->failure_sub_name,subname);
+		}
+	}
+
 	/* Generate a substitution pattern for this weapon.
 	This pattern is very naive such that it calculates the lowest common denominator as being all of
 	the periods multiplied together.
@@ -3430,6 +3440,29 @@ void weapon_generate_indexes_for_substitution() {
 			}
 
 			memset(wip->weapon_substitution_pattern_names, 0, sizeof(char) * MAX_SUBSTITUTION_PATTERNS * NAME_LENGTH);
+		}
+
+		if (wip->failure_rate > 0.0f) {
+			if (stricmp("none", wip->failure_sub_name) != 0) {
+				wip->failure_sub = weapon_info_lookup(wip->failure_sub_name);
+
+				if (wip->failure_sub == -1) { // invalid sub weapon
+					Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
+						wip->name, wip->failure_sub_name);
+					wip->failure_rate = 0.0f;
+				}
+
+				if (Weapon_info[wip->failure_sub].subtype != wip->subtype) {
+					// Check to make sure secondaries can't be launched by primaries and vice versa
+					Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which is of a different subtype.",
+						wip->name, wip->failure_sub_name);
+					wip->num_substitution_patterns = 0;
+					wip->failure_sub = -1;
+					wip->failure_rate = 0.0f;
+				}
+			}
+
+			memset(wip->failure_sub_name, 0, sizeof(char) * NAME_LENGTH);
 		}
 	}
 }
@@ -7846,6 +7879,9 @@ void weapon_info::reset()
 
 	this->thruster_glow_factor = 1.0f;
 	this->target_lead_scaler = 0.0f;
+
+	this->failure_rate = 0.0f;
+	this->failure_sub = -1;
 
 	this->selection_effect = Default_weapon_select_effect;
 
