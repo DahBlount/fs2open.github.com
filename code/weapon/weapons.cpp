@@ -5139,6 +5139,21 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		}
 	}
 
+	// Let's setup a fast failure check with a uniform distribution.
+	if (wip->failure_rate > 0.0f) {
+		std::random_device rd;
+		std::mt19937 f(rd());
+		std::uniform_real_distribution<float> gen(0.0f, 1.0f);
+		float test = gen(f);
+		if (test < wip->failure_rate) {
+			if (wip->failure_sub != -1) {
+				return weapon_create(pos, porient, wip->failure_sub, parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
+			} else {
+				return -1;
+			}
+		}
+	}
+
 	num_deleted = 0;
 	if (Num_weapons >= MAX_WEAPONS-5) {
 
