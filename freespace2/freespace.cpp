@@ -1809,6 +1809,10 @@ void game_init()
 // SOUND INIT END
 /////////////////////////////
 
+	// Taking less than the number of logical cores will reduce any hickups (Dahblount)
+	Num_threads = SDL_GetCPUCount() - 1;
+	// Will probably add a cmdline option for a custom number of threads
+
 	std::unique_ptr<SDLGraphicsOperations> sdlGraphicsOperations;
 	if (!Is_standalone) {
 		// Standalone mode doesn't require graphics operations

@@ -1925,7 +1925,7 @@ void obj_add_pairs(int objnum)
  * Removes any occurances of object 'a' from
  * the pairs list.
  */
-extern int Num_pairs;
+extern std::atomic<int> Num_pairs;
 extern obj_pair pair_used_list;
 extern obj_pair pair_free_list;
 void obj_remove_pairs( object * a )
@@ -1941,7 +1941,7 @@ void obj_remove_pairs( object * a )
 		return;
 	}
 
-	Num_pairs-=a->num_pairs;
+	Num_pairs -= a->num_pairs;
 	
 	parent = &pair_used_list;
 	tmp = parent->next;

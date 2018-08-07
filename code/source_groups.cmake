@@ -336,6 +336,11 @@ add_file_folder("GlobalIncs\\\\Memory"
 	globalincs/memory/utils.h
 )
 
+add_file_folder("GlobalIncs\\\\Threads"
+	globalincs/threads/threads.h
+	globalincs/threads/threads.cpp
+)
+
 add_file_folder("GlobalIncs\\\\Toolchain"
 	globalincs/toolchain/clang.h
 	globalincs/toolchain/doxygen.h
