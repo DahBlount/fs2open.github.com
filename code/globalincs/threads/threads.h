@@ -1,4 +1,11 @@
-
+/*
+ * Threads.h
+ * Author: DahBlount
+ * Date: Aug. 6, 2018
+ *
+ * This contains some helpers to make threading a fair bit easier
+ *
+**/
 #ifndef _GLOBAL_THREADS_H_
 #define _GLOBAL_THREADS_H_
 
@@ -9,14 +16,8 @@
 
 #include "globalincs\pstypes.h"
 
-int Num_threads = 1;
-
-typedef std::thread SCP_thread;
-typedef std::mutex SCP_mutex;
-typedef std::unique_lock<std::mutex> SCP_binary_semaphore;
-
 typedef std::atomic<int> int_atomic;
 
-SCP_vector<int> bounds(int threads, int elem);
+SCP_vector<int> bounds(int elem);
 
 #endif // !_GLOBAL_THREADS_H_

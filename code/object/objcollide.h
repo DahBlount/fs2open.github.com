@@ -13,6 +13,7 @@
 #define _COLLIDESTUFF_H
 
 #include "globalincs/pstypes.h"
+#include "globalincs/threads/threads.h"
 
 class object;
 struct CFILE;
@@ -83,7 +84,7 @@ void obj_reset_colliders();
 void obj_check_all_collisions();
 void obj_sort_and_collide();
 void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axis);
-void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<int> *list, int axis, bool collide);
+void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<int> *list, int axis, bool collide, int left, int right);
 float obj_get_collider_endpoint(int obj_num, int axis, bool min);
 void obj_collide_pair(object *A, object *B);
 

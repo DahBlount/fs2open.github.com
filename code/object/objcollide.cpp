@@ -64,6 +64,13 @@ public:
 
 SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
 
+/* Some threading related things
+* overlap_mtx => Lock for synchronzing overlappers_list_out
+*
+**/
+std::mutex overlap_mtx;
+extern int Num_threads;
+
 class checkobject;
 extern checkobject CheckObjects[MAX_OBJECTS];
 
@@ -1228,63 +1235,109 @@ void obj_sort_and_collide()
 	SCP_vector<int> sort_list_y;
 	SCP_vector<int> sort_list_z;
 
+	SCP_vector<std::thread> threads;
+	SCP_vector<int> lims;
+
 	sort_list_y.clear();
 	{
 		TRACE_SCOPE(tracing::SortColliders);
 		obj_quicksort_colliders(&Collision_sort_list, 0, (int)(Collision_sort_list.size() - 1), 0);
 	}
-	obj_find_overlap_colliders(&sort_list_y, &Collision_sort_list, 0, false);
+	lims = bounds(Collision_sort_list.size());
+	for (int i = 0; i < Num_threads; i++) {
+		threads.push_back(std::thread(obj_find_overlap_colliders, &sort_list_y, &Collision_sort_list, 0, false, lims[i], lims[i + 1]));
+	}
+
+	for (auto &t : threads) {
+		t.join();
+	}
+	threads.clear();
+	lims.clear();
 
 	sort_list_z.clear();
 	{
 		TRACE_SCOPE(tracing::SortColliders);
 		obj_quicksort_colliders(&sort_list_y, 0, (int)(sort_list_y.size() - 1), 1);
 	}
-	obj_find_overlap_colliders(&sort_list_z, &sort_list_y, 1, false);
+	lims = bounds(sort_list_y.size());
+	for (int i = 0; i < Num_threads; i++) {
+		threads.push_back(std::thread(obj_find_overlap_colliders, &sort_list_z, &sort_list_y, 1, false, lims[i], lims[i + 1]));
+	}
+	// obj_find_overlap_colliders(&sort_list_z, &sort_list_y, 1, false);
+	for (auto &t : threads) {
+		t.join();
+	}
+	threads.clear();
+	lims.clear();
 
 	sort_list_y.clear();
 	{
 		TRACE_SCOPE(tracing::SortColliders);
 		obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	}
-	obj_find_overlap_colliders(&sort_list_y, &sort_list_z, 2, true);
+	lims = bounds(sort_list_z.size());
+	for (int i = 0; i < Num_threads; i++) {
+		threads.push_back(std::thread(obj_find_overlap_colliders, &sort_list_y, &sort_list_z, 1, false, lims[i], lims[i + 1]));
+	}
+	// obj_find_overlap_colliders(&sort_list_y, &sort_list_z, 2, true);
+	for (auto &t : threads) {
+		t.join();
+	}
+	threads.clear();
+	lims.clear();
 }
 
-void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<int> *list, int axis, bool collide)
+void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<int> *list, int axis, bool collide, int left, int right)
 {
 	TRACE_SCOPE(tracing::FindOverlapColliders);
 
 	size_t i, j;
 	bool overlapped;
 	bool first_not_added = true;
-	SCP_vector<int> overlappers;
+	static SCP_vector<int> overlappers;
+	std::unique_lock<std::mutex> olap_lock(overlap_mtx, std::defer_lock);
 
 	float min;
 	float overlap_max;
 	
-	overlappers.clear();
+	if (left == 0) // This should always be the first thread to start, so let it clear the overlappers
+		overlappers.clear();
 
-	for ( i = 0; i < (*list).size(); ++i ) {
+	for ( i = left; i < right; ++i ) {
 		overlapped = false;
 
-		min = obj_get_collider_endpoint((*list)[i], axis, true);
+		olap_lock.lock();
+		int obj_num = (*list)[i];
+		olap_lock.unlock();
+		min = obj_get_collider_endpoint(obj_num, axis, true);
 
 		for ( j = 0; j < overlappers.size(); ) {
-			overlap_max = obj_get_collider_endpoint(overlappers[j], axis, false);
+			olap_lock.lock();
+			obj_num = overlappers[j];
+			olap_lock.unlock();
+			overlap_max = obj_get_collider_endpoint(obj_num, axis, false);
 			if ( min <= overlap_max ) {
 				overlapped = true;
 
+				olap_lock.lock();
 				if ( overlappers.size() == 1 && first_not_added ) {
 					first_not_added = false;
 					overlap_list_out->push_back(overlappers[j]);
 				}
+				olap_lock.unlock();
 				
 				if ( collide ) {
-					obj_collide_pair(&Objects[(*list)[i]], &Objects[overlappers[j]]);
+					olap_lock.lock();
+					int a = (*list)[i];
+					int b = overlappers[j];
+					olap_lock.unlock();
+					obj_collide_pair(&Objects[a], &Objects[b]);
 				}
 			} else {
+				olap_lock.lock();
 				overlappers[j] = overlappers.back();
 				overlappers.pop_back();
+				olap_lock.unlock();
 				continue;
 			}
 
@@ -1295,11 +1348,13 @@ void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<in
 			first_not_added = true;
 		}
 
+		olap_lock.lock();
 		if ( overlapped ) {
 			overlap_list_out->push_back((*list)[i]);
 		}
 
 		overlappers.push_back((*list)[i]);
+		olap_lock.unlock();
 	}
 
 	overlapped = true;

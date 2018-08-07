@@ -291,6 +291,8 @@ int	Game_font = -1;
 static int Show_player_pos = 0;		// debug console command to show player world pos on HUD
 #endif
 
+extern int Num_threads;
+
 int Debug_octant = -1;
 
 fix Game_time_compression = F1_0;
@@ -1810,7 +1812,7 @@ void game_init()
 /////////////////////////////
 
 	// Taking less than the number of logical cores will reduce any hickups (Dahblount)
-	Num_threads = SDL_GetCPUCount() - 1;
+	Num_threads = 3;
 	// Will probably add a cmdline option for a custom number of threads
 
 	std::unique_ptr<SDLGraphicsOperations> sdlGraphicsOperations;
